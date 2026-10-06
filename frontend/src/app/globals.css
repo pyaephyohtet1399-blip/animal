@@ -1,0 +1,427 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Livestock Census Management System — Global Styles
+   ========================================================================== */
+
+:root {
+  /* Surfaces -------------------------------------------------------------- */
+  --background: #f4f6f4;
+  --foreground: #16211a;
+  --card: #ffffff;
+  --card-foreground: #16211a;
+
+  /* Brand ----------------------------------------------------------------- */
+  --primary: #1b6b42;
+  --primary-foreground: #ffffff;
+
+  --secondary: #e9f0ea;
+  --secondary-foreground: #1c3a2a;
+
+  --muted: #eff3f0;
+  --muted-foreground: #5b6a61;
+
+  --accent: #e4eee7;
+  --accent-foreground: #133f2a;
+
+  /* Status ---------------------------------------------------------------- */
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+
+  --success: #16794a;
+  --success-foreground: #ffffff;
+
+  --warning: #b25e09;
+  --warning-foreground: #ffffff;
+
+  --info: #1a5fb4;
+  --info-foreground: #ffffff;
+
+  /* Lines & focus --------------------------------------------------------- */
+  --border: #dbe2dc;
+  --input: #dbe2dc;
+  --ring: #2f8a5b;
+
+  /* Charts ---------------------------------------------------------------- */
+  --chart-1: #1b6b42;
+  --chart-2: #2f8a5b;
+  --chart-3: #7d9c4f;
+  --chart-4: #b07d12;
+  --chart-5: #1a5fb4;
+  --chart-6: #6b4fa8;
+  --chart-7: #b25e09;
+  --chart-8: #b42318;
+
+  /* Shape ----------------------------------------------------------------- */
+  --radius: 0.5rem;
+
+  /* Typography ------------------------------------------------------------ */
+  /*
+   * Noto Sans Myanmar is loaded by next/font in layout.tsx.
+   *
+   * We put the Myanmar font before the Latin font so Burmese glyphs
+   * are rendered by a proper Myanmar shaping font.
+   */
+  --font-app-sans:
+    var(--font-noto-myanmar),
+    var(--font-geist-sans),
+    "Padauk",
+    "Myanmar Text",
+    "Pyidaungsu",
+    sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-app-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  *,
+  ::before,
+  ::after {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    min-height: 100%;
+    background-color: var(--background);
+    color: var(--foreground);
+
+    /*
+     * Use the application's Myanmar-aware font stack.
+     */
+    font-family: var(--font-sans);
+
+    /*
+     * Keep Latin text readable while allowing proper Myanmar shaping.
+     */
+    font-feature-settings:
+      "cv02",
+      "cv03",
+      "cv04";
+
+    text-rendering: optimizeLegibility;
+  }
+
+  /*
+   * Explicitly make form controls inherit the application's font.
+   *
+   * This is important because browsers can otherwise use their own
+   * default UI font for input/select/button elements.
+   */
+  button,
+  input,
+  textarea,
+  select,
+  option {
+    font: inherit;
+  }
+
+  /*
+   * Myanmar text sometimes appears in buttons, table cells, labels,
+   * headings, etc. All of these should inherit the same font stack.
+   */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  label,
+  th,
+  td,
+  button,
+  input,
+  textarea,
+  select {
+    font-family: inherit;
+  }
+
+  /*
+   * Accessible focus treatment.
+   */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  /*
+   * Numeric columns in census tables stay readable and aligned.
+   */
+  table {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /*
+   * Images and media should never overflow their containers.
+   */
+  img,
+  svg,
+  video,
+  canvas {
+    max-width: 100%;
+  }
+
+  /*
+   * Prevent accidental horizontal overflow caused by long Myanmar text.
+   */
+  p,
+  span,
+  td,
+  th,
+  label,
+  button {
+    overflow-wrap: break-word;
+  }
+
+  /*
+   * Reduced motion accessibility.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+/* ==========================================================================
+   Myanmar Typography Helpers
+   ========================================================================== */
+
+/*
+ * Use this class when a component contains mostly Myanmar text.
+ *
+ * Example:
+ * <div className="font-myanmar">မြန်မာစာ</div>
+ */
+@utility font-myanmar {
+  font-family:
+    var(--font-noto-myanmar),
+    "Padauk",
+    "Myanmar Text",
+    "Pyidaungsu",
+    sans-serif;
+}
+
+/*
+ * Use this class when a component contains mostly Latin/English text.
+ *
+ * Example:
+ * <div className="font-latin">Reports</div>
+ */
+@utility font-latin {
+  font-family:
+    var(--font-geist-sans),
+    sans-serif;
+}
+
+/* ==========================================================================
+   Layout helpers
+   ========================================================================== */
+
+@utility scrollbar-none {
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Print
+   ========================================================================== */
+
+@media print {
+  @page {
+    margin: 12mm;
+    size: A4;
+  }
+
+  html,
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10.5pt;
+
+    /*
+     * Keep Myanmar font when printing.
+     */
+    font-family:
+      var(--font-noto-myanmar),
+      "Padauk",
+      "Myanmar Text",
+      "Pyidaungsu",
+      sans-serif;
+  }
+
+  /*
+   * Shadows and rounded corners are screen affordances.
+   */
+  * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /*
+   * App chrome is navigation, not report content.
+   */
+  header[role="banner"],
+  aside {
+    display: none !important;
+  }
+
+  /*
+   * Nothing should stay pinned on a printed page.
+   */
+  * {
+    overflow: visible !important;
+    position: static !important;
+    max-height: none !important;
+  }
+
+  a {
+    color: inherit !important;
+    text-decoration: none !important;
+  }
+
+  /*
+   * Repeat table headers on every printed page.
+   */
+  thead {
+    display: table-header-group !important;
+  }
+
+  /*
+   * Keep table text readable when printing.
+   */
+  table,
+  th,
+  td {
+    font-family:
+      var(--font-noto-myanmar),
+      "Padauk",
+      "Myanmar Text",
+      "Pyidaungsu",
+      sans-serif;
+  }
+}
+
+/* ==========================================================================
+   Print utilities
+   ========================================================================== */
+
+/*
+ * Never printed.
+ */
+@utility print-none {
+  @media print {
+    display: none !important;
+  }
+}
+
+/*
+ * Only printed.
+ */
+@utility print-only {
+  @media screen {
+    display: none !important;
+  }
+}
+
+/*
+ * Printed content uses the whole sheet.
+ */
+@utility print-full-width {
+  @media print {
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}
+
+/*
+ * Start a new printed page.
+ */
+@utility print-break-before {
+  @media print {
+    break-before: page;
+  }
+}
+
+/*
+ * Keep a card, table or chart header together.
+ */
+@utility print-keep-together {
+  @media print {
+    break-inside: avoid;
+  }
+}

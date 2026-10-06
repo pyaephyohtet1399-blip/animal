@@ -1,0 +1,154 @@
+{
+  "big": [
+    {
+      "categoryId": 1,
+      "name": "ဒေသနွား",
+      "legacyId": "C1"
+    },
+    {
+      "categoryId": 2,
+      "name": "အသားစားနွား",
+      "legacyId": "C2"
+    },
+    {
+      "categoryId": 3,
+      "name": "နို့စားနွား",
+      "legacyId": "C3"
+    },
+    {
+      "categoryId": 4,
+      "name": "နွားနောက်",
+      "legacyId": "C4"
+    },
+    {
+      "categoryId": 5,
+      "name": "ဒေသကျွဲ",
+      "legacyId": "C5"
+    },
+    {
+      "categoryId": 6,
+      "name": "နို့စားကျွဲ",
+      "legacyId": "C6"
+    },
+    {
+      "categoryId": 7,
+      "name": "မြင်း",
+      "legacyId": "C7"
+    },
+    {
+      "categoryId": 8,
+      "name": "အခြား",
+      "legacyId": "C8"
+    }
+  ],
+  "small": [
+    {
+      "categoryId": 1,
+      "name": "ဆိတ်",
+      "legacyId": "C9"
+    },
+    {
+      "categoryId": 2,
+      "name": "သိုး",
+      "legacyId": "C10"
+    },
+    {
+      "categoryId": 3,
+      "name": "ဝက်",
+      "legacyId": "C11"
+    },
+    {
+      "categoryId": 4,
+      "name": "ခွေး",
+      "legacyId": "C12"
+    },
+    {
+      "categoryId": 5,
+      "name": "အခြား",
+      "legacyId": "C13"
+    }
+  ],
+  "poultry": [
+    {
+      "categoryId": 1,
+      "name": "ဥစားကြက်",
+      "legacyId": "C14"
+    },
+    {
+      "categoryId": 2,
+      "name": "အသားစားကြက်",
+      "legacyId": "C15"
+    },
+    {
+      "categoryId": 3,
+      "name": "ဒေသကြက်",
+      "legacyId": "C16"
+    },
+    {
+      "categoryId": 4,
+      "name": "ဥစားဘဲ",
+      "legacyId": "C17"
+    },
+    {
+      "categoryId": 5,
+      "name": "အသားစားဘဲ",
+      "legacyId": "C18"
+    },
+    {
+      "categoryId": 6,
+      "name": "ဒေသဘဲ/ဓါတ်",
+      "legacyId": "C19"
+    },
+    {
+      "categoryId": 7,
+      "name": "ကြက်ဆင်",
+      "legacyId": "C20"
+    },
+    {
+      "categoryId": 8,
+      "name": "ဘဲငန်း",
+      "legacyId": "C21"
+    },
+    {
+      "categoryId": 9,
+      "name": "မန်ဒါလီ",
+      "legacyId": "C22"
+    },
+    {
+      "categoryId": 10,
+      "name": "ငုံး",
+      "legacyId": "C23"
+    },
+    {
+      "categoryId": 11,
+      "name": "အခြား",
+      "legacyId": "C24"
+    }
+  ],
+  "breeding": [
+    {
+      "categoryId": 1,
+      "name": "ဒေသနွား"
+    },
+    {
+      "categoryId": 2,
+      "name": "ဒေသကျွဲ"
+    },
+    {
+      "categoryId": 3,
+      "name": "နို့စားကျွဲ"
+    },
+    {
+      "categoryId": 4,
+      "name": "ဝက်"
+    },
+    {
+      "categoryId": 5,
+      "name": "ဆိတ်"
+    },
+    {
+      "categoryId": 6,
+      "name": "သိုး"
+    }
+  ]
+}

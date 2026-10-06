@@ -1,0 +1,15 @@
+node_modules
+coverage
+logs
+*.log
+.git
+.github
+.env
+data/generated-passwords.csv
+tests
+deploy
+docker-compose.yml
+Dockerfile
+.prettierrc
+.eslintrc.cjs
+jest.config.js

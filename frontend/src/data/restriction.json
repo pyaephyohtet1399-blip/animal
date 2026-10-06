@@ -1,0 +1,132 @@
+[
+  {
+    "rid": 1,
+    "age": "LY1",
+    "sex": "M"
+  },
+  {
+    "rid": 2,
+    "age": "LY1",
+    "sex": "MS"
+  },
+  {
+    "rid": 3,
+    "age": "LY1",
+    "sex": "F"
+  },
+  {
+    "rid": 4,
+    "age": "Y1B3",
+    "sex": "M"
+  },
+  {
+    "rid": 5,
+    "age": "Y1B3",
+    "sex": "MS"
+  },
+  {
+    "rid": 6,
+    "age": "Y1B3",
+    "sex": "F"
+  },
+  {
+    "rid": 7,
+    "age": "GY3",
+    "sex": "M"
+  },
+  {
+    "rid": 8,
+    "age": "GY3",
+    "sex": "MS"
+  },
+  {
+    "rid": 9,
+    "age": "GY3",
+    "sex": "F"
+  },
+  {
+    "rid": 10,
+    "age": "LM2",
+    "sex": "M"
+  },
+  {
+    "rid": 11,
+    "age": "LM2",
+    "sex": "MS"
+  },
+  {
+    "rid": 12,
+    "age": "LM2",
+    "sex": "F"
+  },
+  {
+    "rid": 13,
+    "age": "M2B6",
+    "sex": "M"
+  },
+  {
+    "rid": 14,
+    "age": "M2B6",
+    "sex": "MS"
+  },
+  {
+    "rid": 15,
+    "age": "M2B6",
+    "sex": "F"
+  },
+  {
+    "rid": 16,
+    "age": "GM6",
+    "sex": "M"
+  },
+  {
+    "rid": 17,
+    "age": "GM6",
+    "sex": "MS"
+  },
+  {
+    "rid": 18,
+    "age": "GM6",
+    "sex": "F"
+  },
+  {
+    "rid": 19,
+    "age": "SMALL",
+    "sex": "M"
+  },
+  {
+    "rid": 20,
+    "age": "SMALL",
+    "sex": "F"
+  },
+  {
+    "rid": 21,
+    "age": "MEDIUM",
+    "sex": "M"
+  },
+  {
+    "rid": 22,
+    "age": "MEDIUM",
+    "sex": "F"
+  },
+  {
+    "rid": 23,
+    "age": "LARGE",
+    "sex": "M"
+  },
+  {
+    "rid": 24,
+    "age": "LARGE",
+    "sex": "F"
+  },
+  {
+    "rid": 25,
+    "age": null,
+    "sex": "M"
+  },
+  {
+    "rid": 26,
+    "age": null,
+    "sex": "F"
+  }
+]

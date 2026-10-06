@@ -1,0 +1,152 @@
+[
+  {
+    "cat_id": "C1",
+    "cat_name": "ဒေသနွား",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C10",
+    "cat_name": "သိုး",
+    "mcat_id": "MC2"
+  },
+  {
+    "cat_id": "C11",
+    "cat_name": "ဝက်",
+    "mcat_id": "MC2"
+  },
+  {
+    "cat_id": "C12",
+    "cat_name": "ခွေး",
+    "mcat_id": "MC2"
+  },
+  {
+    "cat_id": "C13",
+    "cat_name": "အခြား",
+    "mcat_id": "MC2"
+  },
+  {
+    "cat_id": "C14",
+    "cat_name": "ဥစားကြက်",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C15",
+    "cat_name": "အသားစားကြက်",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C16",
+    "cat_name": "ဒေသကြက်",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C17",
+    "cat_name": "ဥစားဘဲ",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C18",
+    "cat_name": "အသားစားဘဲ",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C19",
+    "cat_name": "ဒေသဘဲ/ဓါတ်",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C2",
+    "cat_name": "အသားစားနွား",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C20",
+    "cat_name": "ကြက်ဆင်",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C21",
+    "cat_name": "ဘဲငန်း",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C22",
+    "cat_name": "မန်ဒါလီ",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C23",
+    "cat_name": "ငုံး",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C24",
+    "cat_name": "အခြား",
+    "mcat_id": "MC3"
+  },
+  {
+    "cat_id": "C25",
+    "cat_name": "ဒေသနွား",
+    "mcat_id": "MC4"
+  },
+  {
+    "cat_id": "C26",
+    "cat_name": "ဒေသကျွဲ",
+    "mcat_id": "MC4"
+  },
+  {
+    "cat_id": "C27",
+    "cat_name": "နို့စားကျွဲ",
+    "mcat_id": "MC4"
+  },
+  {
+    "cat_id": "C28",
+    "cat_name": "ဝက်",
+    "mcat_id": "MC4"
+  },
+  {
+    "cat_id": "C29",
+    "cat_name": "ဆိတ်",
+    "mcat_id": "MC4"
+  },
+  {
+    "cat_id": "C3",
+    "cat_name": "နို့စားနွား",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C30",
+    "cat_name": "သိုး",
+    "mcat_id": "MC4"
+  },
+  {
+    "cat_id": "C4",
+    "cat_name": "နွားနောက်",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C5",
+    "cat_name": "ဒေသကျွဲ",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C6",
+    "cat_name": "နို့စားကျွဲ",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C7",
+    "cat_name": "မြင်း",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C8",
+    "cat_name": "အခြား",
+    "mcat_id": "MC1"
+  },
+  {
+    "cat_id": "C9",
+    "cat_name": "ဆိတ်",
+    "mcat_id": "MC2"
+  }
+]
