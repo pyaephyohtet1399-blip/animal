@@ -2,6 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ChartCard } from "@/components/charts/chart-card";
+import type { ChartDatum } from "@/components/charts/chart-config";
+import { HorizontalBarChart } from "@/components/charts/horizontal-bar-chart";
 import { ReportFilters } from "@/components/reports/report-filters";
 import {
   Mc1Report,
@@ -66,6 +69,12 @@ export function ReportsContent() {
 
   const hasRecords = bundle.totals.interviewCount > 0;
 
+  const livestockByCategory: ChartDatum[] = bundle.categories
+    .filter((row) => row.count > 0)
+    .map((row) => ({ label: row.categoryName, value: row.count }));
+
+  const chartCopy = REPORT_COPY.charts.livestockByCategory;
+
   return (
     <div className="flex flex-col gap-6 print-full-width">
       <PageHeader
@@ -108,6 +117,25 @@ export function ReportsContent() {
         <>
           <TractReport key={`tract-${bundle.scopeLabel}`} rows={bundle.tracts} />
           <VillageReport key={`village-${bundle.scopeLabel}`} rows={bundle.villages} />
+          <ChartCard
+            key={`category-${bundle.scopeLabel}`}
+            title={chartCopy.title}
+            titleMm={chartCopy.titleMm}
+            description={chartCopy.description}
+            total={bundle.totals.livestockCount}
+            totalLabel={chartCopy.totalLabel}
+            isEmpty={livestockByCategory.length === 0}
+            emptyTitle={REPORT_COPY.noneTitle}
+            emptyDescription={REPORT_COPY.noneDescription}
+          >
+            <HorizontalBarChart
+              data={livestockByCategory}
+              valueLabel={chartCopy.valueLabel}
+              categoryLabel={chartCopy.categoryLabel}
+              labelWidth={150}
+            />
+          </ChartCard>
+
           {bundle.mc1Large.length > 0 ? (
             <Mc1Report key={`mc1-${bundle.scopeLabel}`} rows={bundle.mc1Large} />
           ) : null}

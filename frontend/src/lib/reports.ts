@@ -472,11 +472,18 @@ function scopeGeography(scope: ReportScope, dataset: CensusDataset) {
     ? tracts.filter((option) => option.value === scope.tractCode)
     : tracts;
 
+  // A village list follows the whole scope: a pinned village, else the chosen
+  // tract, else every village inside the chosen township, else the district.
+  const tractIdSet = new Set(tractIds.map((option) => option.value));
   const villages = scope.villageCode
     ? childOptions(dataset.villages, scope.tractCode).filter(
         (option) => option.value === scope.villageCode,
       )
-    : childOptions(dataset.villages, scope.tractCode);
+    : scope.townshipCode
+      ? dataset.villages.filter(
+          (option) => option.parentCode !== null && tractIdSet.has(option.parentCode),
+        )
+      : childOptions(dataset.villages, scope.tractCode);
 
   return { townships, tractIds, villages };
 }

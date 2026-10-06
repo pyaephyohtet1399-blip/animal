@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 
 import { CountDisplay } from "@/components/livestock/count-display";
 import { GroupedTable, type GroupedColumn } from "@/components/reports/report-grouped-table";
-import { McChart } from "@/components/reports/report-livestock";
 import { ReportSection } from "@/components/reports/report-section";
 import { Pagination } from "@/components/table/pagination";
 import { paginate } from "@/lib/census";
@@ -65,7 +64,6 @@ function sexColumn<TRow extends LivestockGridRow>(
 }
 
 interface AgeGridProps<TRow extends LivestockGridRow, TCode extends string> {
-  copy: { title: string; titleMm: string; description: string };
   rows: TRow[];
   codes: readonly TCode[];
   labelOf: (code: TCode) => string;
@@ -73,7 +71,6 @@ interface AgeGridProps<TRow extends LivestockGridRow, TCode extends string> {
 }
 
 function AgeGridReport<TRow extends LivestockGridRow, TCode extends string>({
-  copy,
   rows,
   codes,
   labelOf,
@@ -107,7 +104,6 @@ function AgeGridReport<TRow extends LivestockGridRow, TCode extends string>({
         columns={columns}
         rows={pageRows}
         rowKey={(row) => row.categoryId}
-        caption={`${copy.title} — ${rows.length} animal types`}
       />
     ),
     renderPrintTable: (pageRows: TRow[]) => (
@@ -117,7 +113,6 @@ function AgeGridReport<TRow extends LivestockGridRow, TCode extends string>({
         columns={columns}
         rows={pageRows}
         rowKey={(row) => row.categoryId}
-        caption={`${copy.title} — ${rows.length} animal types`}
       />
     ),
   };
@@ -131,7 +126,7 @@ interface PoultryGridResult {
   renderPrintTable: (pageRows: PoultryLivestockReportRow[]) => React.ReactNode;
 }
 
-function PoultryGrid({ copy, rows }: { copy: { title: string; titleMm: string; description: string }; rows: PoultryLivestockReportRow[] }): PoultryGridResult {
+function PoultryGrid({ rows }: { rows: PoultryLivestockReportRow[] }): PoultryGridResult {
   const total = rows.reduce((sum, row) => sum + row.total, 0);
   const hasCastrated = rows.some((row) =>
     SIZE_CLASS_CODES.some((code) => row.sizeGroups[code].castratedMale > 0),
@@ -169,7 +164,6 @@ function PoultryGrid({ copy, rows }: { copy: { title: string; titleMm: string; d
         columns={columns}
         rows={pageRows}
         rowKey={(row) => row.categoryId}
-        caption={`${copy.title} — ${rows.length} animal types`}
       />
     ),
     renderPrintTable: (pageRows: PoultryLivestockReportRow[]) => (
@@ -179,7 +173,6 @@ function PoultryGrid({ copy, rows }: { copy: { title: string; titleMm: string; d
         columns={columns}
         rows={pageRows}
         rowKey={(row) => row.categoryId}
-        caption={`${copy.title} — ${rows.length} animal types`}
       />
     ),
   };
@@ -193,7 +186,7 @@ interface SummaryGridResult {
   renderPrintTable: (pageRows: LivestockSexSummaryRow[]) => React.ReactNode;
 }
 
-function SummaryGrid({ copy, rows }: { copy: { title: string; titleMm: string; description: string }; rows: LivestockSexSummaryRow[] }): SummaryGridResult {
+function SummaryGrid({ rows }: { rows: LivestockSexSummaryRow[] }): SummaryGridResult {
   const total = rows.reduce((sum, row) => sum + row.total, 0);
   const hasCastrated = rows.some((row) => row.castratedMale > 0);
 
@@ -221,7 +214,6 @@ function SummaryGrid({ copy, rows }: { copy: { title: string; titleMm: string; d
         columns={columns}
         rows={pageRows}
         rowKey={(row) => row.categoryId}
-        caption={`${copy.title} — ${rows.length} animal types`}
       />
     ),
     renderPrintTable: (pageRows: LivestockSexSummaryRow[]) => (
@@ -231,72 +223,15 @@ function SummaryGrid({ copy, rows }: { copy: { title: string; titleMm: string; d
         columns={columns}
         rows={pageRows}
         rowKey={(row) => row.categoryId}
-        caption={`${copy.title} — ${rows.length} animal types`}
       />
     ),
   };
-}
-
-function chartRowsForLarge(rows: LargeLivestockReportRow[]) {
-  return rows.map((row) => {
-    let male = 0;
-    let castratedMale = 0;
-    let female = 0;
-    for (const code of YEAR_AGE_CLASS_CODES) {
-      const split = row.ageGroups[code];
-      male += split.male;
-      castratedMale += split.castratedMale;
-      female += split.female;
-    }
-    return { categoryName: row.categoryName, male, castratedMale, female, total: row.total };
-  });
-}
-
-function chartRowsForSmall(rows: SmallLivestockReportRow[]) {
-  return rows.map((row) => {
-    let male = 0;
-    let castratedMale = 0;
-    let female = 0;
-    for (const code of MONTH_AGE_CLASS_CODES) {
-      const split = row.ageGroups[code];
-      male += split.male;
-      castratedMale += split.castratedMale;
-      female += split.female;
-    }
-    return { categoryName: row.categoryName, male, castratedMale, female, total: row.total };
-  });
-}
-
-function chartRowsForPoultry(rows: PoultryLivestockReportRow[]) {
-  return rows.map((row) => {
-    let male = 0;
-    let castratedMale = 0;
-    let female = 0;
-    for (const code of SIZE_CLASS_CODES) {
-      const split = row.sizeGroups[code];
-      male += split.male;
-      castratedMale += split.castratedMale;
-      female += split.female;
-    }
-    return { categoryName: row.categoryName, male, castratedMale, female, total: row.total };
-  });
-}
-
-function chartRowsForMc4(rows: LivestockSexSummaryRow[]) {
-  return rows.map((row) => ({
-    categoryName: row.categoryName,
-    male: row.male,
-    castratedMale: row.castratedMale,
-    female: row.female,
-    total: row.total,
-  }));
 }
 
 /** MC1 / တိရစ္ဆာန်ကြီး — year-based. */
 export function Mc1Report({ rows }: { rows: LargeLivestockReportRow[] }) {
   const [page, setPage] = useState(1);
   const grid = useMemo(() => AgeGridReport<LargeLivestockReportRow, YearAgeClassCode>({
-    copy: REPORT_COPY.reports.largeAnimals,
     rows,
     codes: YEAR_AGE_CLASS_CODES,
     labelOf: (code) => REPORT_COPY.ageGroups[code],
@@ -314,7 +249,6 @@ export function Mc1Report({ rows }: { rows: LargeLivestockReportRow[] }) {
       footer={REPORT_COPY.dimensionNote}
       breaksBefore
     >
-      <McChart title={REPORT_COPY.reports.largeAnimals.title} titleMm={REPORT_COPY.reports.largeAnimals.titleMm} description={REPORT_COPY.reports.largeAnimals.description} rows={chartRowsForLarge(rows)} />
       <div className="print-none">
         {grid.renderTable(pageResult.rows)}
         {pageResult.pageCount > 1 && (
@@ -345,7 +279,6 @@ export function Mc1Report({ rows }: { rows: LargeLivestockReportRow[] }) {
 export function Mc2Report({ rows }: { rows: SmallLivestockReportRow[] }) {
   const [page, setPage] = useState(1);
   const grid = useMemo(() => AgeGridReport<SmallLivestockReportRow, MonthAgeClassCode>({
-    copy: REPORT_COPY.reports.smallAnimals,
     rows,
     codes: MONTH_AGE_CLASS_CODES,
     labelOf: (code) => REPORT_COPY.ageGroups[code],
@@ -363,7 +296,6 @@ export function Mc2Report({ rows }: { rows: SmallLivestockReportRow[] }) {
       footer={REPORT_COPY.dimensionNote}
       breaksBefore
     >
-      <McChart title={REPORT_COPY.reports.smallAnimals.title} titleMm={REPORT_COPY.reports.smallAnimals.titleMm} description={REPORT_COPY.reports.smallAnimals.description} rows={chartRowsForSmall(rows)} />
       <div className="print-none">
         {grid.renderTable(pageResult.rows)}
         {pageResult.pageCount > 1 && (
@@ -393,7 +325,7 @@ export function Mc2Report({ rows }: { rows: SmallLivestockReportRow[] }) {
 /** MC3 / ကြက်/ဘဲ/ငုံး — size-based. */
 export function Mc3Report({ rows }: { rows: PoultryLivestockReportRow[] }) {
   const [page, setPage] = useState(1);
-  const grid = useMemo(() => PoultryGrid({ copy: REPORT_COPY.reports.poultry, rows }), [rows]);
+  const grid = useMemo(() => PoultryGrid({ rows }), [rows]);
   const pageResult = useMemo(() => paginate(rows, page, REPORTS_PAGE_SIZE), [rows, page]);
 
   return (
@@ -405,7 +337,6 @@ export function Mc3Report({ rows }: { rows: PoultryLivestockReportRow[] }) {
       footer={grid.hasCastrated ? REPORT_COPY.castratedNote : REPORT_COPY.dimensionNote}
       breaksBefore
     >
-      <McChart title={REPORT_COPY.reports.poultry.title} titleMm={REPORT_COPY.reports.poultry.titleMm} description={REPORT_COPY.reports.poultry.description} rows={chartRowsForPoultry(rows)} />
       <div className="print-none">
         {grid.renderTable(pageResult.rows)}
         {pageResult.pageCount > 1 && (
@@ -435,7 +366,7 @@ export function Mc3Report({ rows }: { rows: PoultryLivestockReportRow[] }) {
 /** MC4 / မျိုးတိရစ္ဆာန် — no age/size grid. */
 export function Mc4Report({ rows }: { rows: LivestockSexSummaryRow[] }) {
   const [page, setPage] = useState(1);
-  const grid = useMemo(() => SummaryGrid({ copy: REPORT_COPY.reports.sexSummary, rows }), [rows]);
+  const grid = useMemo(() => SummaryGrid({ rows }), [rows]);
   const pageResult = useMemo(() => paginate(rows, page, REPORTS_PAGE_SIZE), [rows, page]);
 
   return (
@@ -447,7 +378,6 @@ export function Mc4Report({ rows }: { rows: LivestockSexSummaryRow[] }) {
       footer={grid.hasCastrated ? REPORT_COPY.castratedNote : undefined}
       breaksBefore
     >
-      <McChart title={REPORT_COPY.reports.sexSummary.title} titleMm={REPORT_COPY.reports.sexSummary.titleMm} description={REPORT_COPY.reports.sexSummary.description} rows={chartRowsForMc4(rows)} />
       <div className="print-none">
         {grid.renderTable(pageResult.rows)}
         {pageResult.pageCount > 1 && (
