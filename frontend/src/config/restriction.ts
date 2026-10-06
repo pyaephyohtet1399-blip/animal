@@ -15,18 +15,18 @@ import type {
  */
 
 export const AGE_CLASS_LABELS = {
-  LY1: "Under 1 year",
-  Y1B3: "1 to 3 years",
-  GY3: "Over 3 years",
-  LM2: "Under 2 months",
-  M2B6: "2 to 6 months",
-  GM6: "Over 6 months",
+  LY1: "၁ နှစ်အောက်",
+  Y1B3: "၁ နှစ်မှ ၃ နှစ်အတွင်း",
+  GY3: "၃ နှစ်အထက်",
+  LM2: "၂ လအောက်",
+  M2B6: "၂ လမှ ၆ လအတွင်း",
+  GM6: "၆ လအထက်",
 } satisfies Record<AgeClassCode, string>;
 
 export const SIZE_CLASS_LABELS = {
-  SMALL: "Small",
-  MEDIUM: "Medium",
-  LARGE: "Large",
+  SMALL: "အငယ်စား",
+  MEDIUM: "အလတ်စား",
+  LARGE: "အကြီးစား",
 } satisfies Record<SizeClassCode, string>;
 
 /** Both code sets share one lookup because the column accepts either. */
@@ -40,8 +40,8 @@ export const RESTRICTION_DIMENSION_LABELS = {
  * rendered as the bare code. Add it here once its meaning is confirmed.
  */
 export const SEX_CODE_LABELS: Partial<Record<SexCode, string>> = {
-  M: "Male",
-  F: "Female",
+  M: "အထီး",
+  F: "အမ",
 };
 
 /** Shown in place of a code when `restriction.age` is `null`. */

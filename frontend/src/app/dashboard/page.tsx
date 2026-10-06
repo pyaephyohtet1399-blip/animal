@@ -4,8 +4,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DashboardContent } from "./dashboard-content";
 
 export const metadata: Metadata = {
-  title: "Dashboard",
-  description: "District-wide census totals and livestock distribution.",
+  title: "ပင်မဒက်ရှ်ဘုတ်",
+  description: "ခရိုင်တစ်ဝန်းရှိ သန်းခေါင်စာရင်း စုစုပေါင်းများနှင့် မွေးမြူရေးတိရစ္ဆာန် ဖြန့်ဝေမှု အခြေအနေများ။",
 };
 
 /**

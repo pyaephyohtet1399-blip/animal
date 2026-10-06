@@ -4,11 +4,11 @@ import { ReportsContent } from "./reports-content";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 
 export const metadata: Metadata = {
-  title: "Reports",
+  title: "စစ်တမ်းကောက်ယူမှု အကျဥ်းချုပ်",
   description:
-    "Census records arranged by township, tract, village and animal group, printable as a single document.",
+    "မြို့နယ်၊ ကျေးရွာအုပ်စု၊ ကျေးရွာနှင့် တိရစ္ဆာန်အုပ်စုအလိုက် စီစဉ်ထားပြီး စာရွက်စာတမ်းတစ်ခုတည်းအဖြစ် ပုံနှိပ်ထုတ်နိုင်သော စာရင်းဇယား မှတ်တမ်းများ။",
 };
-
+ 
 /**
  * Reports.
  *

@@ -84,7 +84,7 @@ export const REPORT_COPY = {
 
   charts: {
     livestockByCategory: {
-      title: "Livestock by Category",
+      title: "အမျိုးအစားအလိုက် တိရစ္ဆာန်များ",
       titleMm: "အမျိုးအစားအလိုက် တိရစ္ဆာန်များ",
       description: "ရွေးချယ်ထားသော နယ်ပယ်အတွင်း မှတ်တမ်းတင်ထားသည့် တိရစ္ဆာန်အမျိုးအစားအလိုက် အရေအတွက်။",
       totalLabel: "total",

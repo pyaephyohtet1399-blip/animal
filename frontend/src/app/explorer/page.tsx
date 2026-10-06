@@ -5,8 +5,8 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { DISTRICT_NAME } from "@/config/app";
 
 export const metadata: Metadata = {
-  title: "Data Explorer",
-  description: `Browse townships, town and village tracts, and wards and villages in ${DISTRICT_NAME}.`,
+  title: "ဒေတာရှာဖွေစူးစမ်းရန်",
+  description: `${DISTRICT_NAME}အတွင်းရှိ မြို့နယ်များ၊ မြို့နှင့် ကျေးရွာအုပ်စုများ၊ ရပ်ကွက်များနှင့် ကျေးရွာများကို ကြည့်ရှုစစ်ဆေးပါ။`,
 };
 
 /**

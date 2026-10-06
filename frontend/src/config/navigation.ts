@@ -27,18 +27,18 @@ export interface NavigationSection {
 
 export const navigationSections: NavigationSection[] = [
   {
-    title: "Overview",
+    title: "အထွေထွေသုံးသပ်ချက်",
     items: [
       {
-        label: "Home",
-        labelMm: "ပင်မ",
+        label: "ပင်မစာမျက်နှာ",
+        labelMm: "ပင်မစာမျက်နှာ",
         href: "/",
         icon: House,
         enabled: true,
       },
       {
-        label: "Dashboard",
-        labelMm: "ဒက်ဘုတ်",
+        label: "ပင်မဒက်ရှ်ဘုတ်",
+        labelMm: "ပင်မဒက်ရှ်ဘုတ်",
         href: "/dashboard",
         icon: LayoutDashboard,
         enabled: true,
@@ -46,18 +46,18 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
-    title: "Census",
+    title: "သန်းခေါင်စာရင်း",
     items: [
       {
-        label: "Data Explorer",
-        labelMm: "ဒေတာရှာဖွေးရန်",
+        label: "ဒေတာရှာဖွေစူးစမ်းရန်",
+        labelMm: "ဒေတာရှာဖွေစူးစမ်းရန်",
         href: "/explorer",
         icon: Table2,
         enabled: true,
       },
       {
-        label: "Census Records",
-        labelMm: "သနန်းစာရင်းများ",
+        label: "သန်းခေါင်စာရင်း မှတ်တမ်းများ",
+        labelMm: "သန်းခေါင်စာရင်း မှတ်တမ်းများ",
         href: "/census",
         icon: ClipboardList,
         enabled: true,
@@ -65,10 +65,10 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
-    title: "Analysis",
+    title: "ဆန်းစစ်ချက်များ",
     items: [
       {
-        label: "စစ်တမ်းကောက်ယူမှုအကျဉ်းချုပ်",
+        label: "စစ်တမ်းကောက်ယူမှု အကျဉ်းချုပ်",
         labelMm: "စာရင်းများ",
         href: "/reports",
         icon: ChartColumn,
@@ -77,10 +77,10 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
-    title: "Administration",
+    title: "စီမံခန့်ခွဲမှု",
     items: [
       {
-        label: "Users",
+        label: "အသုံးပြုသူများ",
         labelMm: "အသုံးပြုသူများ",
         href: "/users",
         icon: Users,

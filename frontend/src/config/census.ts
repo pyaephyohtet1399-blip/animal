@@ -1,39 +1,39 @@
 export const CENSUS_COPY = {
   title: "Census Records",
-  titleMm: "သနန်းစာရင်းများ",
+  titleMm: "သန်းခေါင်စာရင်း မှတ်တမ်းများ",
   description:
-    "Every household interview in the district with the place it belongs to and the livestock counted in it. Search and filter the records, then open one to read its census.",
+    "ခရိုင်အတွင်းရှိ အိမ်ထောင်စုတစ်စုချင်းစီ၏ မေးမြန်းမှုများ၊ တည်နေရာနှင့် ကောက်ယူရရှိထားသော မွေးမြူရေးတိရစ္ဆာန် စာရင်းများ။ မှတ်တမ်းများကို ရှာဖွေနိုင်ပြီး စစ်ထုတ်နိုင်သည်၊ ထို့နောက် အသေးစိတ်ကြည့်ရှုရန် ဖွင့်လှစ်နိုင်ပါသည်။",
 
   search: {
-    label: "Search census records",
-    placeholder: "Name, village, tract or township",
+    label: "သန်းခေါင်စာရင်း မှတ်တမ်းများကို ရှာရန်",
+    placeholder: "အမည်၊ ကျေးရွာ၊ ကျေးရွာအုပ်စု သို့မဟုတ် မြို့နယ်",
   },
   /** Chip label for the free-text search. */
-  searchChipLabel: "Search",
+  searchChipLabel: "ရှာဖွေရန်",
 
   filters: {
-    township: { label: "Township", all: "All townships" },
-    tract: { label: "Village Tract", all: "All tracts" },
-    village: { label: "Village", all: "All villages" },
-    mainCategory: { label: "Main Category", all: "All animal groups" },
-    category: { label: "Category", all: "All animal types" },
-    date: { label: "Census date" },
+    township: { label: "မြို့နယ်", all: "မြို့နယ်အားလုံး" },
+    tract: { label: "ကျေးရွာအုပ်စု", all: "ကျေးရွာအုပ်စုအားလုံး" },
+    village: { label: "ကျေးရွာ", all: "ကျေးရွာအားလုံး" },
+    mainCategory: { label: "ပင်မအုပ်စု", all: "တိရစ္ဆာန်အုပ်စုအားလုံး" },
+    category: { label: "အမျိုးအစား", all: "တိရစ္ဆာန်အမျိုးအစားအားလုံး" },
+    date: { label: "စာရင်းကောက်ယူသည့်ရက်စွဲ" },
   },
 
   columns: {
-    respondent: "Household / Respondent",
-    township: "Township",
-    tract: "Village Tract",
-    village: "Village",
-    censusDate: "Census Date",
-    livestock: "Livestock",
-    actions: "Actions",
+    respondent: "အိမ်ထောင်စု / ဖြေဆိုသူ",
+    township: "မြို့နယ်",
+    tract: "ကျေးရွာအုပ်စု",
+    village: "ကျေးရွာ",
+    censusDate: "စာရင်းကောက်ယူသည့်ရက်စွဲ",
+    livestock: "မွေးမြူရေးတိရစ္ဆာန်များ",
+    actions: "လုပ်ဆောင်ချက်များ",
   },
 
-  rowHint: "Open census details",
-  emptyTitle: "No census records",
-  noMatchTitle: "No records match these filters",
+  rowHint: "စာရင်းအသေးစိတ်ကို ကြည့်ရန် ဖွင့်မည်",
+  emptyTitle: "သန်းခေါင်စာရင်း မှတ်တမ်းများ မရှိသေးပါ",
+  noMatchTitle: "ရွေးချယ်ထားသော စစ်ထုတ်ချက်များနှင့် ကိုက်ညီသော မှတ်တမ်းမရှိပါ",
   noMatchDescription:
-    "No household interview matches the current search and filters. Widen the date range or clear a filter to see more.",
-  clearFilters: "Clear search and filters",
+    "လက်ရှိ ရှာဖွေမှုနှင့် စစ်ထုတ်ချက်များနှင့် ကိုက်ညီသည့် အိမ်ထောင်စု မေးမြန်းချက် မရှိပါ။ မှတ်တမ်းများ ပိုမိုပြသရန် ရက်စွဲအကွာအဝေးကို တိုးမြှင့်ပါ သို့မဟုတ် စစ်ထုတ်ချက်ကို ရှင်းလင်းပါ။",
+  clearFilters: "ရှာဖွေမှုနှင့် စစ်ထုတ်ချက်များကို ဖယ်ရှားရန်",
 } as const;
