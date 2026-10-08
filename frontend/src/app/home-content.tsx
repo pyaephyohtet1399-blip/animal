@@ -1,6 +1,5 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { ChevronRight, FileText, Landmark, MapPin, PawPrint, UserRound } from "lucide-react";
 
 import { DetailList } from "@/components/shared/detail-list";
@@ -31,11 +30,14 @@ import {
   DISTRICT_NAME,
   DISTRICT_NAME_MM,
   GEOGRAPHY_CHAIN,
-} from "@/config/app";
-import { getInterviews } from "@/lib/repositories/interview";
-import { getTownVillages } from "@/lib/repositories/town-village";
-import { getTownships } from "@/lib/repositories/township";
-import { getWardVillages } from "@/lib/repositories/ward-village";
+} from "@/config ori/app";
+import { apiErrorMessage } from "@/services/api/api-error";
+import {
+  useGetInterviewsQuery,
+  useGetTownVillagesQuery,
+  useGetTownshipsQuery,
+  useGetWardVillagesQuery,
+} from "@/services/api/censusApi";
 import type { DetailItem } from "@/types/ui";
 
 const TOKEN_SWATCHES = [
@@ -59,27 +61,22 @@ const API_SOURCES = [
 ];
 
 export function HomeContent() {
-  const [townships, setTownships] = useState<number | null>(null);
-  const [townVillages, setTownVillages] = useState<number | null>(null);
-  const [wardVillages, setWardVillages] = useState<number | null>(null);
-  const [interviews, setInterviews] = useState<number | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    Promise.all([getTownships(), getTownVillages(), getWardVillages(), getInterviews()])
-      .then(([t, tv, wv, iv]) => {
-        setTownships(t.length);
-        setTownVillages(tv.length);
-        setWardVillages(wv.length);
-        setInterviews(iv.length);
-      })
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
-  }, []);
+  const townshipsQuery = useGetTownshipsQuery();
+  const townVillagesQuery = useGetTownVillagesQuery();
+  const wardVillagesQuery = useGetWardVillagesQuery();
+  const interviewsQuery = useGetInterviewsQuery();
+  const failedQuery = [
+    townshipsQuery,
+    townVillagesQuery,
+    wardVillagesQuery,
+    interviewsQuery,
+  ].find((query) => query.isError);
+  const error = failedQuery ? apiErrorMessage(failedQuery.error) : null;
 
   const scopeDetails: DetailItem[] = [
     { label: "District", value: `${DISTRICT_NAME} (${DISTRICT_NAME_MM})` },
     { label: "Country", value: COUNTRY_NAME },
-    { label: "Townships in scope", value: townships ?? "—" },
+    { label: "Townships in scope", value: townshipsQuery.data?.length ?? "—" },
     { label: "Data source", value: DATA_SOURCE_LABEL },
   ];
 
@@ -101,25 +98,25 @@ export function HomeContent() {
         <StatCard
           label="Townships"
           labelMm="မြို့နယ်"
-          value={townships ?? "—"}
+          value={townshipsQuery.data?.length ?? "—"}
           icon={Landmark}
         />
         <StatCard
           label="Town / Village Tracts"
           labelMm="မြို့ / ရွာတိုင်း"
-          value={townVillages ?? "—"}
+          value={townVillagesQuery.data?.length ?? "—"}
           icon={MapPin}
         />
         <StatCard
           label="Wards / Villages"
           labelMm="ရပ်ကွက် / ရွာ"
-          value={wardVillages ?? "—"}
+          value={wardVillagesQuery.data?.length ?? "—"}
           icon={FileText}
         />
         <StatCard
           label="Household interviews"
           labelMm="အိမ်ထောင်စု မေးမြးမှု"
-          value={interviews ?? "—"}
+          value={interviewsQuery.data?.length ?? "—"}
           icon={UserRound}
         />
       </div>

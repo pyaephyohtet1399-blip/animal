@@ -1,35 +1,44 @@
-import { getCategories, getMainCategories } from "@/lib/repositories/category";
-import { getInterviews } from "@/lib/repositories/interview";
-import { getLivestockCensusForInterviews } from "@/lib/repositories/livestock";
-import { getTownVillages } from "@/lib/repositories/town-village";
-import { getTownships } from "@/lib/repositories/township";
-import { getWardVillages } from "@/lib/repositories/ward-village";
 import { EMPTY_LIVESTOCK_CENSUS } from "@/types/livestock";
+import type {
+  Category,
+  InterviewInfo,
+  MainCategory,
+  Township,
+  TownVillage,
+  WardVillage,
+} from "@/types/census";
 import type {
   CensusDataset,
   CensusRecord,
   FilterOption,
 } from "@/types/census-records";
+import type { LivestockCensus } from "@/types/livestock";
 
 /**
- * Data access for the census records table.
+ * Assembly of the census records table.
  *
  * One row is one `interview_info` record. Its livestock figures and the
  * categories behind them come from the Phase 05 resolver, so the join is
  * written once; this module only attaches the geography names and builds the
- * filter option lists.
+ * filter option lists. Fetching itself lives in `censusApi`, which caches each
+ * source through RTK Query before handing them here.
  */
-export async function getCensusDataset(): Promise<CensusDataset> {
-  const [townships, townVillages, wardVillages, interviews] = await Promise.all([
-    getTownships(),
-    getTownVillages(),
-    getWardVillages(),
-    getInterviews(),
-  ]);
+export interface CensusDatasetSources {
+  townships: Township[];
+  townVillages: TownVillage[];
+  wardVillages: WardVillage[];
+  interviews: InterviewInfo[];
+  /** Resolved livestock census keyed by `p_Id`. */
+  censusById: Record<string, LivestockCensus>;
+  categories: Category[];
+  mainCategories: MainCategory[];
+}
 
-  const censusById = await getLivestockCensusForInterviews(
-    interviews.map((interview) => interview.p_Id),
-  );
+export function assembleCensusDataset(
+  sources: CensusDatasetSources,
+): CensusDataset {
+  const { townships, townVillages, wardVillages, interviews, censusById, categories, mainCategories } =
+    sources;
 
   const townshipByCode = new Map(townships.map((row) => [row.tspCode, row]));
   const tractByCode = new Map(townVillages.map((row) => [row.tvgCode, row]));
@@ -74,8 +83,16 @@ export async function getCensusDataset(): Promise<CensusDataset> {
       parentCode: row.tvgCode,
     })),
     dates: distinctDates(records),
-    mainCategories: await mainCategoryOptions(),
-    categories: await categoryOptions(),
+    mainCategories: mainCategories.map((row) => ({
+      value: row.mcat_id,
+      label: row.name,
+      parentCode: null,
+    })),
+    categories: categories.map((row) => ({
+      value: row.cat_id,
+      label: row.cat_name,
+      parentCode: row.mcat_id,
+    })),
   };
 }
 
@@ -85,24 +102,4 @@ function distinctDates(records: CensusRecord[]): FilterOption[] {
   return [...seen]
     .sort((a, b) => b.localeCompare(a))
     .map((date) => ({ value: date, label: date, parentCode: null }));
-}
-
-async function mainCategoryOptions(): Promise<FilterOption[]> {
-  const mainCategories = await getMainCategories();
-
-  return mainCategories.map((row) => ({
-    value: row.mcat_id,
-    label: row.name,
-    parentCode: null,
-  }));
-}
-
-async function categoryOptions(): Promise<FilterOption[]> {
-  const categories = await getCategories();
-
-  return categories.map((row) => ({
-    value: row.cat_id,
-    label: row.cat_name,
-    parentCode: row.mcat_id,
-  }));
 }

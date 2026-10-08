@@ -3,7 +3,7 @@
 import { CountDisplay } from "@/components/livestock/count-display";
 import { GroupedTable, type GroupedColumn } from "@/components/reports/report-grouped-table";
 import { ReportSection } from "@/components/reports/report-section";
-import { REPORT_COPY } from "@/config/reports";
+import { REPORT_COPY } from "@/config ori/reports";
 import {
   MONTH_AGE_CLASS_CODES,
   YEAR_AGE_CLASS_CODES,

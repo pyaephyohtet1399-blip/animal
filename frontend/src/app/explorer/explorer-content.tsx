@@ -1,19 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { ExplorerControls } from "@/components/explorer/explorer-controls";
 import { ExplorerView } from "@/components/explorer/explorer-view";
 import { LocationBreadcrumb } from "@/components/explorer/location-breadcrumb";
 import { PageHeader } from "@/components/shared/page-header";
 import { buildExplorerHref, parseExplorerSelection } from "@/lib/explorer";
-import { getExplorerChain } from "@/lib/repositories/explorer";
-import type { ExplorerChain } from "@/lib/repositories/explorer";
+import { buildExplorerChain } from "@/lib/repositories/explorer";
+import { apiErrorMessage } from "@/services/api/api-error";
+import {
+  useGetTownVillagesQuery,
+  useGetTownshipsQuery,
+  useGetWardVillagesQuery,
+} from "@/services/api/censusApi";
 
 export function ExplorerContent() {
   const searchParams = useSearchParams();
-  const [chain, setChain] = useState<ExplorerChain | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
   const selection = useMemo(() => {
     const record: Record<string, string | string[] | undefined> = {};
@@ -23,11 +26,22 @@ export function ExplorerContent() {
     return parseExplorerSelection(record);
   }, [searchParams]);
 
-  useEffect(() => {
-    getExplorerChain(selection)
-      .then(setChain)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
-  }, [selection]);
+  const townshipsQuery = useGetTownshipsQuery();
+  const townVillagesQuery = useGetTownVillagesQuery();
+  const wardVillagesQuery = useGetWardVillagesQuery();
+  const failedQuery = [townshipsQuery, townVillagesQuery, wardVillagesQuery].find(
+    (query) => query.isError,
+  );
+  const error = failedQuery ? apiErrorMessage(failedQuery.error) : null;
+
+  const { data: townships } = townshipsQuery;
+  const { data: townVillages } = townVillagesQuery;
+  const { data: wardVillages } = wardVillagesQuery;
+
+  const chain = useMemo(() => {
+    if (!townships || !townVillages || !wardVillages) return null;
+    return buildExplorerChain(selection, townships, townVillages, wardVillages);
+  }, [selection, townships, townVillages, wardVillages]);
 
   if (error) {
     return (

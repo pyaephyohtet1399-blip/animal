@@ -1,5 +1,5 @@
 import { CountDisplay } from "@/components/livestock/count-display";
-import { LIVESTOCK_COPY } from "@/config/livestock";
+import { LIVESTOCK_COPY } from "@/config ori/livestock";
 
 export interface LivestockSummaryProps {
   /** Sum of every `answer.count` for the interview. */

@@ -1,18 +1,13 @@
-import { getTownVillageByCode, getTownVillages } from "@/lib/repositories/town-village";
-import { getTownshipByCode, getTownships } from "@/lib/repositories/township";
-import {
-  getWardVillageByCode,
-  getWardVillages,
-} from "@/lib/repositories/ward-village";
 import type { ExplorerSelection, LocationNode } from "@/types/explorer";
+import type { Township, TownVillage, WardVillage } from "@/types/census";
 
 /**
- * Data access for the geographic explorer.
+ * Resolution of the geographic explorer.
  *
- * `township`, `town_vg` and `ward_village` are read through their own
- * repositories and then normalized to `LocationNode`, so every explorer
- * component works against one shape regardless of level. A real API can
- * replace these functions later without any component changing.
+ * `township`, `town_vg` and `ward_village` are normalized to `LocationNode`,
+ * so every explorer component works against one shape regardless of level.
+ * These functions are pure — `censusApi` fetches the three lists through RTK
+ * Query and passes them in, so navigating back to the explorer never refetches.
  */
 
 function toTownshipNode(tspCode: string, tspName: string): LocationNode {
@@ -27,6 +22,18 @@ function toWardVillageNode(wvCode: string, wvName: string, tvgCode: string): Loc
   return { code: wvCode, name: wvName, parentCode: tvgCode };
 }
 
+function townshipNodes(townships: readonly Township[]): LocationNode[] {
+  return townships.map((row) => toTownshipNode(row.tspCode, row.tspName));
+}
+
+function townVillageNodes(townVillages: readonly TownVillage[]): LocationNode[] {
+  return townVillages.map((row) => toTownVillageNode(row.tvgCode, row.tvgName, row.tspCode));
+}
+
+function wardVillageNodes(wardVillages: readonly WardVillage[]): LocationNode[] {
+  return wardVillages.map((row) => toWardVillageNode(row.wvCode, row.wvName, row.tvgCode));
+}
+
 function findNode(
   nodes: readonly LocationNode[],
   code: string | null,
@@ -37,32 +44,6 @@ function findNode(
 
   return nodes.find((node) => node.code === code) ?? null;
 }
-
-/** Root level: every township in the district. */
-export async function getTownshipNodes(): Promise<LocationNode[]> {
-  const townships = await getTownships();
-
-  return townships.map((township) => toTownshipNode(township.tspCode, township.tspName));
-}
-
-/** Every town / village tract in the district, unscoped. */
-export async function getAllTownVillageNodes(): Promise<LocationNode[]> {
-  const townVillages = await getTownVillages();
-
-  return townVillages.map((townVillage) =>
-    toTownVillageNode(townVillage.tvgCode, townVillage.tvgName, townVillage.tspCode),
-  );
-}
-
-/** Every ward / village in the district, unscoped. */
-export async function getAllWardVillageNodes(): Promise<LocationNode[]> {
-  const wardVillages = await getWardVillages();
-
-  return wardVillages.map((wardVillage) =>
-    toWardVillageNode(wardVillage.wvCode, wardVillage.wvName, wardVillage.tvgCode),
-  );
-}
-
 
 /** Everything the explorer renders for one resolved branch. */
 export interface ExplorerChain {
@@ -89,25 +70,28 @@ export interface ExplorerChain {
  * A child implies its parent, so `?wv=194407` is enough on its own, and a code
  * whose parent does not line up is dropped rather than rendered.
  */
-export async function getExplorerChain(requested: ExplorerSelection): Promise<ExplorerChain> {
-  const [townships, allTownVillages, allWardVillages] = await Promise.all([
-    getTownshipNodes(),
-    getAllTownVillageNodes(),
-    getAllWardVillageNodes(),
-  ]);
+export function buildExplorerChain(
+  requested: ExplorerSelection,
+  townships: readonly Township[],
+  allTownVillages: readonly TownVillage[],
+  allWardVillages: readonly WardVillage[],
+): ExplorerChain {
+  const townshipNodesList = townshipNodes(townships);
+  const allTownVillageNodes = townVillageNodes(allTownVillages);
+  const allWardVillageNodes = wardVillageNodes(allWardVillages);
 
-  const requestedVillage = findNode(allWardVillages, requested.wardVillageCode);
+  const requestedVillage = findNode(allWardVillageNodes, requested.wardVillageCode);
   const tractOfRequestedVillage = requestedVillage
-    ? findNode(allTownVillages, requestedVillage.parentCode)
+    ? findNode(allTownVillageNodes, requestedVillage.parentCode)
     : null;
 
   // A child implies the parent it belongs to.
   const townVillage =
-    findNode(allTownVillages, requested.townVillageCode) ?? tractOfRequestedVillage;
+    findNode(allTownVillageNodes, requested.townVillageCode) ?? tractOfRequestedVillage;
 
   const township =
-    findNode(townships, requested.townshipCode) ??
-    (townVillage?.parentCode ? findNode(townships, townVillage.parentCode) : null);
+    findNode(townshipNodesList, requested.townshipCode) ??
+    (townVillage?.parentCode ? findNode(townshipNodesList, townVillage.parentCode) : null);
 
   // Keep a node only when the parent we ended up with is really its parent.
   const scopedTownVillage =
@@ -118,13 +102,13 @@ export async function getExplorerChain(requested: ExplorerSelection): Promise<Ex
       ? requestedVillage
       : null;
 
-  const townVillages = township
-    ? allTownVillages.filter((node) => node.parentCode === township.code)
-    : allTownVillages;
+  const scopedTownVillages = township
+    ? allTownVillageNodes.filter((node) => node.parentCode === township.code)
+    : allTownVillageNodes;
 
-  const tractCodesInScope = new Set(townVillages.map((node) => node.code));
+  const tractCodesInScope = new Set(scopedTownVillages.map((node) => node.code));
 
-  const wardVillages = allWardVillages.filter((node) => {
+  const scopedWardVillages = allWardVillageNodes.filter((node) => {
     if (scopedTownVillage) {
       return node.parentCode === scopedTownVillage.code;
     }
@@ -140,9 +124,9 @@ export async function getExplorerChain(requested: ExplorerSelection): Promise<Ex
       townVillageCode: scopedTownVillage?.code ?? null,
       wardVillageCode: wardVillage?.code ?? null,
     },
-    townships,
-    townVillages,
-    wardVillages,
+    townships: townshipNodesList,
+    townVillages: scopedTownVillages,
+    wardVillages: scopedWardVillages,
     township,
     townVillage: scopedTownVillage,
     wardVillage,
@@ -168,18 +152,23 @@ export interface WardVillageChain {
  * missing, which the route turns into a 404 rather than rendering a village
  * without a township.
  */
-export async function getWardVillageChain(wvCode: string): Promise<WardVillageChain | null> {
-  const wardVillage = await getWardVillageByCode(wvCode);
+export function findWardVillageChain(
+  wvCode: string,
+  wardVillages: readonly WardVillage[],
+  townVillages: readonly TownVillage[],
+  townships: readonly Township[],
+): WardVillageChain | null {
+  const wardVillage = wardVillages.find((row) => row.wvCode === wvCode);
   if (!wardVillage) {
     return null;
   }
 
-  const townVillage = await getTownVillageByCode(wardVillage.tvgCode);
+  const townVillage = townVillages.find((row) => row.tvgCode === wardVillage.tvgCode);
   if (!townVillage) {
     return null;
   }
 
-  const township = await getTownshipByCode(townVillage.tspCode);
+  const township = townships.find((row) => row.tspCode === townVillage.tspCode);
   if (!township) {
     return null;
   }

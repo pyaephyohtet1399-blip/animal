@@ -7,6 +7,22 @@
  * Romanised names.
  */
 
+/**
+ * Myanmar-locale ordering for place names.
+ *
+ * The API returns locations in code order, which reads as random in a column
+ * or a dropdown. One collator keeps every list — search results, explorer
+ * columns, filter selects — in the same က-ခ-ဂ order a reader expects.
+ * `sensitivity: "base"` treats names that differ only in tone marks as equal,
+ * and `Array.prototype.sort` is stable, so ties keep their code order.
+ */
+const NAME_COLLATOR = new Intl.Collator("my", { usage: "sort", sensitivity: "base" });
+
+/** Alphabetical (Burmese) order for two display names. */
+export function compareNames(a: string | null | undefined, b: string | null | undefined): number {
+  return NAME_COLLATOR.compare(a ?? "", b ?? "");
+}
+
 /** Normalised form used on both sides of a comparison. */
 export function normalizeTerm(value: string): string {
   return value.trim().toLowerCase();

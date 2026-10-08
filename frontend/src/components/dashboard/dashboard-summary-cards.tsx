@@ -2,7 +2,7 @@ import { ClipboardList, Landmark, MapPin, PawPrint } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
 import { StatCard } from "@/components/shared/stat-card";
-import { DASHBOARD_COPY } from "@/config/dashboard";
+import { DASHBOARD_COPY } from "@/config ori/dashboard";
 import type { CensusTotals } from "@/types/statistics";
 
 export interface DashboardSummaryCardsProps {

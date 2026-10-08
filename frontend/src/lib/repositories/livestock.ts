@@ -1,25 +1,37 @@
-import { apiFetch } from "@/lib/api-client";
-import { getCategories, getMainCategories } from "@/lib/repositories/category";
 import type { Category, MainCategory } from "@/types/census";
 import type { LivestockAnswer, LivestockCensus, LivestockGroup } from "@/types/livestock";
 
 /**
- * Data access for the livestock census.
+ * Resolution of the livestock census.
  *
- * The backend stores animals in four typed arrays on each survey. This layer
+ * The backend stores animals in four typed arrays on each survey. This module
  * resolves every reference (category, main category, age class, sex) so the
  * components never see raw API field names.
  */
 
-interface ApiAnimal {
+export interface ApiAnimal {
   categoryId: number;
   ageLimit?: string;
   sex: string;
   count: number;
 }
 
-interface ApiSurveyDetail {
+export interface ApiSurveyDetail {
   surveyId: number;
+  bigAnimals: ApiAnimal[];
+  smallAnimals: ApiAnimal[];
+  poultry: ApiAnimal[];
+  breedingAnimals: ApiAnimal[];
+}
+
+/** Body of `PUT /surveys/:surveyId` — interview fields plus the four arrays. */
+export interface UpdateSurveyPayload {
+  hName: string;
+  hEdu: string;
+  hGender: string;
+  hPhone: string;
+  hAge: number;
+  ansDate: string;
   bigAnimals: ApiAnimal[];
   smallAnimals: ApiAnimal[];
   poultry: ApiAnimal[];
@@ -37,7 +49,8 @@ const TYPE_TO_MCAT: Record<AnimalType, string> = {
 
 const TYPE_OFFSET: Record<AnimalType, number> = { big: 0, small: 8, poultry: 13, breeding: 24 };
 
-const AGE_MAP: Record<string, string> = {
+/** Raw `ageLimit` value (`Over3`) → the display code used everywhere (`GY3`). */
+export const AGE_LIMIT_CODE: Record<string, string> = {
   LessThanOne: "LY1",
   Between1and3: "Y1B3",
   Over3: "GY3",
@@ -69,7 +82,8 @@ function getArrays(detail: ApiSurveyDetail): Array<{ type: AnimalType; animals: 
   ];
 }
 
-function buildCensus(
+/** Resolve one survey's animals into the shape every component renders. */
+export function buildCensus(
   detail: ApiSurveyDetail,
   categories: Category[],
   mainCategories: MainCategory[],
@@ -86,7 +100,7 @@ function buildCensus(
       const category = categoryById.get(cat_id);
       const mcat_id = TYPE_TO_MCAT[type];
       const mainCategory = mainCategoryById.get(mcat_id);
-      const age = animal.ageLimit ? (AGE_MAP[animal.ageLimit] ?? null) : null;
+      const age = animal.ageLimit ? (AGE_LIMIT_CODE[animal.ageLimit] ?? null) : null;
       const sex = SEX_MAP[animal.sex] ?? "M";
 
       if (!category || !mainCategory) continue;
@@ -121,33 +135,4 @@ function buildCensus(
   const groups = [...groupsById.values()].filter((g) => g.answers.length > 0);
 
   return { groups, totalCount, answerCount: allAnswers.length, unresolvedCount: 0 };
-}
-
-/**
- * Livestock census for several interviews at once, keyed by `p_Id`.
- *
- * Each survey detail is fetched individually; the taxonomy is read once.
- */
-export async function getLivestockCensusForInterviews(
-  p_Ids: readonly number[],
-): Promise<Record<string, LivestockCensus>> {
-  const censusById: Record<string, LivestockCensus> = {};
-
-  if (p_Ids.length === 0) {
-    return censusById;
-  }
-
-  const [categories, mainCategories] = await Promise.all([getCategories(), getMainCategories()]);
-
-  const details = await Promise.all(
-    p_Ids.map((id) =>
-      apiFetch<{ data: ApiSurveyDetail }>(`/surveys/${id}`).then((r) => r.data),
-    ),
-  );
-
-  details.forEach((detail, i) => {
-    censusById[String(p_Ids[i])] = buildCensus(detail, categories, mainCategories);
-  });
-
-  return censusById;
 }

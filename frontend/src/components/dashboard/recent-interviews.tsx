@@ -15,7 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { DASHBOARD_COPY } from "@/config/dashboard";
+import { DASHBOARD_COPY } from "@/config ori/dashboard";
 import type { RecentInterview } from "@/types/statistics";
 
 export interface RecentInterviewsProps {

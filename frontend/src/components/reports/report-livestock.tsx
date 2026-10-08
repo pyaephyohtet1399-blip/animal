@@ -2,7 +2,7 @@
 
 import { SexStackChart } from "@/components/reports/report-sex-stack-chart";
 import { ReportSection } from "@/components/reports/report-section";
-import { REPORT_COPY } from "@/config/reports";
+import { REPORT_COPY } from "@/config ori/reports";
 
 export interface McChartProps {
   title: string;

@@ -2,8 +2,7 @@
 
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 
 import { ExplorerColumn } from "@/components/explorer/explorer-column";
 import { ExplorerLayout } from "@/components/explorer/explorer-layout";
@@ -12,51 +11,78 @@ import { LocationList } from "@/components/explorer/location-list";
 import { StatePanel } from "@/components/shared/state-panel";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { EXPLORER_COPY, EXPLORER_LEVEL_COPY } from "@/config ori/explorer";
+import { buildVillageHref, filterLocations } from "@/lib/explorer";
+import { buildExplorerChain } from "@/lib/repositories/explorer";
+import { apiErrorMessage } from "@/services/api/api-error";
 import {
-  buildExplorerHref,
-  buildVillageHref,
-  filterLocations,
-} from "@/lib/explorer";
-import type { ExplorerSelection, LocationNode } from "@/types/explorer";
+  useGetTownVillagesQuery,
+  useGetTownshipsQuery,
+  useGetWardVillagesQuery,
+} from "@/services/api/censusApi";
+import type { LocationNode } from "@/types/explorer";
 
-export interface ExplorerViewProps {
-  townships: LocationNode[];
-  townVillages: LocationNode[];
-  wardVillages: LocationNode[];
-  /** Selection after invalid codes were dropped, so every code here is real. */
-  selection: ExplorerSelection;
-  /** Resolved nodes, for the details panel. */
-  township: LocationNode | null;
-  townVillage: LocationNode | null;
-  wardVillage: LocationNode | null;
-  /** Explorer URL of the current selection; guards redundant navigation. */
-  currentHref: string;
+export interface CensusLocationSearchProps {
+  /** Selected township, from the census URL (`tsp`). */
+  townshipCode: string | null;
+  /** Selected town / village tract, from the census URL (`tvg`). */
+  tractCode: string | null;
+  /** Selected ward / village, from the census URL (`wv`). */
+  villageCode: string | null;
+  /**
+   * Applies a location change to the census query. The caller resets paging and
+   * pushes the new URL, so the columns and the records table always agree.
+   */
+  onChange: (overrides: {
+    townshipCode?: string | null;
+    tractCode?: string | null;
+    villageCode?: string | null;
+  }) => void;
+  /** True while a selection change is being resolved; dims the columns. */
+  isPending?: boolean;
 }
 
 /**
- * The three level columns plus the selected-village panel.
+ * The explorer's three location columns, reused as the search control above the
+ * census records table.
  *
- * All three columns are populated on arrival: with nothing selected they list
- * the whole district, and each column narrows the levels below it. The
- * selection itself lives in the URL, so this component only owns the per-level
- * search text. Each search remembers the parent scope it was typed in, which is
- * how a box resets when its scope changes without needing an effect.
+ * Selection lives in the census URL (`tsp`/`tvg`/`wv` — the same parameter
+ * names the explorer itself uses), so picking a row here narrows the records
+ * below it, and clicking the selected row again clears that level and every
+ * level beneath it. Each column owns only its search text, and each search
+ * remembers the parent scope it was typed in so it resets when that scope
+ * changes, exactly like the explorer.
  */
-export function ExplorerView({
-  townships,
-  townVillages,
-  wardVillages,
-  selection,
-  township,
-  townVillage,
-  wardVillage,
-  currentHref,
-}: ExplorerViewProps) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
+export function CensusLocationSearch({
+  townshipCode,
+  tractCode,
+  villageCode,
+  onChange,
+  isPending = false,
+}: CensusLocationSearchProps) {
+  const townshipsQuery = useGetTownshipsQuery();
+  const townVillagesQuery = useGetTownVillagesQuery();
+  const wardVillagesQuery = useGetWardVillagesQuery();
+  const failedQuery = [townshipsQuery, townVillagesQuery, wardVillagesQuery].find(
+    (query) => query.isError,
+  );
+  const error = failedQuery ? apiErrorMessage(failedQuery.error) : null;
 
-  const townshipScope = selection.townshipCode ?? "";
-  const tractScope = selection.townVillageCode ?? "";
+  const { data: townships } = townshipsQuery;
+  const { data: townVillages } = townVillagesQuery;
+  const { data: wardVillages } = wardVillagesQuery;
+
+  const chain = useMemo(() => {
+    if (!townships || !townVillages || !wardVillages) return null;
+    return buildExplorerChain(
+      { townshipCode, townVillageCode: tractCode, wardVillageCode: villageCode },
+      townships,
+      townVillages,
+      wardVillages,
+    );
+  }, [townshipCode, tractCode, villageCode, townships, townVillages, wardVillages]);
+
+  const townshipScope = townshipCode ?? "";
+  const tractScope = tractCode ?? "";
 
   const [townshipQuery, setTownshipQuery] = useState("");
   const [tractQuery, setTractQuery] = useState({ scope: townshipScope, value: "" });
@@ -65,45 +91,60 @@ export function ExplorerView({
   const activeTractQuery = tractQuery.scope === townshipScope ? tractQuery.value : "";
   const activeVillageQuery = villageQuery.scope === tractScope ? villageQuery.value : "";
 
-  const visibleTownships = useMemo(
-    () => filterLocations(townships, townshipQuery),
-    [townships, townshipQuery],
-  );
-  const visibleTownVillages = useMemo(
-    () => filterLocations(townVillages, activeTractQuery),
-    [townVillages, activeTractQuery],
-  );
-  const visibleWardVillages = useMemo(
-    () => filterLocations(wardVillages, activeVillageQuery),
-    [wardVillages, activeVillageQuery],
-  );
-
-  function navigate(next: ExplorerSelection) {
-    const href = buildExplorerHref(next);
-    if (href === currentHref) {
-      return;
-    }
-    startTransition(() => {
-      router.push(href, { scroll: false });
-    });
+  if (error) {
+    return (
+      <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-destructive">
+        {error}
+      </div>
+    );
   }
 
-  // Selecting a level always narrows to it; stepping back out is the job of the
-  // scope bar's "back one level" and "show all" controls.
+  if (!chain) {
+    return <div className="h-72 animate-pulse rounded-lg bg-muted" />;
+  }
+
+  const visibleTownships = filterLocations(chain.townships, townshipQuery);
+  const visibleTownVillages = filterLocations(chain.townVillages, activeTractQuery);
+  const visibleWardVillages = filterLocations(chain.wardVillages, activeVillageQuery);
+
+  const selection = chain.selection;
+
+  // Selecting a level narrows to it, writing the parent codes back too so the
+  // URL and the checked rows describe the same branch. Clicking the row that is
+  // already selected clears that level and everything below it instead — the
+  // columns are the only place to undo a selection now.
   function handleSelectTownship(node: LocationNode) {
-    navigate({ townshipCode: node.code, townVillageCode: null, wardVillageCode: null });
+    if (node.code === townshipCode) {
+      onChange({ townshipCode: null, tractCode: null, villageCode: null });
+      return;
+    }
+    onChange({ townshipCode: node.code, tractCode: null, villageCode: null });
   }
 
   function handleSelectTownVillage(node: LocationNode) {
-    navigate({
-      townshipCode: township?.code ?? null,
-      townVillageCode: node.code,
-      wardVillageCode: null,
+    if (node.code === tractCode) {
+      onChange({ tractCode: null, villageCode: null });
+      return;
+    }
+    onChange({
+      townshipCode: node.parentCode ?? townshipCode,
+      tractCode: node.code,
+      villageCode: null,
     });
   }
 
   function handleSelectWardVillage(node: LocationNode) {
-    navigate({ ...selection, wardVillageCode: node.code });
+    if (node.code === villageCode) {
+      onChange({ villageCode: null });
+      return;
+    }
+    const tract =
+      chain?.townVillages.find((row) => row.code === node.parentCode) ?? null;
+    onChange({
+      townshipCode: tract?.parentCode ?? townshipCode,
+      tractCode: tract?.code ?? node.parentCode ?? tractCode,
+      villageCode: node.code,
+    });
   }
 
   return (
@@ -112,7 +153,7 @@ export function ExplorerView({
         <ExplorerColumn
           title={EXPLORER_LEVEL_COPY.township.title}
           titleMm={EXPLORER_LEVEL_COPY.township.titleMm}
-          totalCount={townships.length}
+          totalCount={chain.townships.length}
           resultCount={visibleTownships.length}
           search={{
             label: EXPLORER_LEVEL_COPY.township.searchLabel,
@@ -124,9 +165,9 @@ export function ExplorerView({
         >
           <LocationList
             ariaLabel={EXPLORER_LEVEL_COPY.township.title}
-            className="max-h-[28rem]"
+            className="max-h-[24rem]"
             items={visibleTownships}
-            totalCount={townships.length}
+            totalCount={chain.townships.length}
             query={townshipQuery}
             selectedCode={selection.townshipCode}
             onSelect={handleSelectTownship}
@@ -146,7 +187,7 @@ export function ExplorerView({
         <ExplorerColumn
           title={EXPLORER_LEVEL_COPY.townVillage.title}
           titleMm={EXPLORER_LEVEL_COPY.townVillage.titleMm}
-          totalCount={townVillages.length}
+          totalCount={chain.townVillages.length}
           resultCount={visibleTownVillages.length}
           search={{
             label: EXPLORER_LEVEL_COPY.townVillage.searchLabel,
@@ -158,9 +199,9 @@ export function ExplorerView({
         >
           <LocationList
             ariaLabel={EXPLORER_LEVEL_COPY.townVillage.title}
-            className="max-h-[28rem]"
+            className="max-h-[24rem]"
             items={visibleTownVillages}
-            totalCount={townVillages.length}
+            totalCount={chain.townVillages.length}
             query={activeTractQuery}
             selectedCode={selection.townVillageCode}
             onSelect={handleSelectTownVillage}
@@ -169,7 +210,7 @@ export function ExplorerView({
                 tone="empty"
                 title={EXPLORER_LEVEL_COPY.townVillage.emptyTitle}
                 description={
-                  township
+                  chain.township
                     ? "The selected township has no tract records."
                     : undefined
                 }
@@ -188,7 +229,7 @@ export function ExplorerView({
         <ExplorerColumn
           title={EXPLORER_LEVEL_COPY.wardVillage.title}
           titleMm={EXPLORER_LEVEL_COPY.wardVillage.titleMm}
-          totalCount={wardVillages.length}
+          totalCount={chain.wardVillages.length}
           resultCount={visibleWardVillages.length}
           search={{
             label: EXPLORER_LEVEL_COPY.wardVillage.searchLabel,
@@ -200,9 +241,9 @@ export function ExplorerView({
         >
           <LocationList
             ariaLabel={EXPLORER_LEVEL_COPY.wardVillage.title}
-            className="max-h-[28rem]"
+            className="max-h-[24rem]"
             items={visibleWardVillages}
-            totalCount={wardVillages.length}
+            totalCount={chain.wardVillages.length}
             query={activeVillageQuery}
             selectedCode={selection.wardVillageCode}
             onSelect={handleSelectWardVillage}
@@ -221,9 +262,9 @@ export function ExplorerView({
                 tone="empty"
                 title={EXPLORER_LEVEL_COPY.wardVillage.emptyTitle}
                 description={
-                  townVillage
+                  chain.townVillage
                     ? "The selected tract has no ward or village records."
-                    : township
+                    : chain.township
                       ? "The selected township has no ward or village records."
                       : undefined
                 }
@@ -240,22 +281,24 @@ export function ExplorerView({
         </ExplorerColumn>
       </ExplorerLayout>
 
-      <LocationDetails
-        village={wardVillage}
-        tract={townVillage}
-        township={township}
-        action={
-          wardVillage ? (
+      {chain.wardVillage ? (
+        <LocationDetails
+          village={chain.wardVillage}
+          tract={chain.townVillage}
+          township={chain.township}
+          description="Ward / village selected for the records below."
+          footer={null}
+          action={
             <Link
-              href={buildVillageHref(wardVillage.code)}
+              href={buildVillageHref(chain.wardVillage.code)}
               className={buttonVariants({ variant: "primary", size: "sm" })}
             >
               <ChevronRight aria-hidden />
               {EXPLORER_COPY.openVillageDetail}
             </Link>
-          ) : null
-        }
-      />
+          }
+        />
+      ) : null}
     </div>
   );
 }

@@ -4,15 +4,15 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
 import { buildCensusColumns } from "@/components/census/census-columns";
-import { CensusFilters, type CensusUpdateMode } from "@/components/census/census-filters";
-import { InterviewDetails } from "@/components/interview/interview-details";
+import { CensusLocationSearch } from "@/components/census/census-location-search";
+import { RecordDetails } from "@/components/interview/record-details";
 import { StatePanel } from "@/components/shared/state-panel";
 import { DataTable } from "@/components/table/data-table";
 import { Pagination } from "@/components/table/pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DetailPanel } from "@/components/ui/detail-panel";
-import { CENSUS_COPY } from "@/config/census";
+import { CENSUS_COPY } from "@/config ori/census";
 import { buildCensusHref, hasActiveFilters, CENSUS_PAGE_SIZE } from "@/lib/census";
 import type {
   CensusDataset,
@@ -56,8 +56,10 @@ const CLEAR_ALL: Partial<CensusFilterState> = {
  * is shareable, the back button steps through filter changes, and swapping the
  * mock data for an endpoint means replacing one query, not this component.
  *
- * The controls live in `CensusFilters` and the column list in `census-columns`;
- * what is left here is the navigation, the row that is open, and the layout.
+ * The location columns sit above in `CensusLocationSearch` and the column list
+ * lives in `census-columns`; what is left here is the navigation, the row that
+ * is open, and the layout. The open row is tracked by id, not by object, so a
+ * save that rewrites the dataset re-renders the panel with the fresh row.
  */
 export function CensusRecordsView({
   dataset,
@@ -69,11 +71,11 @@ export function CensusRecordsView({
   pageCount,
 }: CensusRecordsViewProps) {
   const router = useRouter();
-  const [, startTransition] = useTransition();
-  const [openRecord, setOpenRecord] = useState<CensusRecord | null>(null);
+  const [isPending, startTransition] = useTransition();
+  const [openRecordId, setOpenRecordId] = useState<number | null>(null);
 
   /** Single entry point for every query change, so paging stays consistent. */
-  function change(overrides: Partial<CensusFilterState>, mode: CensusUpdateMode = "push") {
+  function change(overrides: Partial<CensusFilterState>) {
     // Narrowing invalidates the current page offset; changing the sort or the
     // page explicitly does not.
     const narrows = Object.keys(overrides).some((key) => key !== "sort" && key !== "page");
@@ -84,17 +86,12 @@ export function CensusRecordsView({
     };
 
     startTransition(() => {
-      const href = buildCensusHref(next);
-      if (mode === "replace") {
-        router.replace(href, { scroll: false });
-      } else {
-        router.push(href, { scroll: false });
-      }
+      router.push(buildCensusHref(next), { scroll: false });
     });
   }
 
   function clearAll() {
-    setOpenRecord(null);
+    setOpenRecordId(null);
     change(CLEAR_ALL);
   }
 
@@ -108,17 +105,21 @@ export function CensusRecordsView({
     });
   }
 
-  const columns = buildCensusColumns({ onOpen: setOpenRecord });
+  const openRecord =
+    openRecordId === null
+      ? null
+      : (dataset.records.find((record) => record.interview.p_Id === openRecordId) ?? null);
+  const columns = buildCensusColumns({ onOpen: (record) => setOpenRecordId(record.interview.p_Id) });
   const hasFilters = hasActiveFilters(state);
 
   return (
     <div className="flex flex-col gap-4">
-      <CensusFilters
-        dataset={dataset}
-        state={state}
-        matchedCount={matchedCount}
-        onChange={change}
-        onClearAll={clearAll}
+      <CensusLocationSearch
+        townshipCode={state.townshipCode}
+        tractCode={state.tractCode}
+        villageCode={state.villageCode}
+        onChange={(overrides) => change(overrides)}
+        isPending={isPending}
       />
 
       <Card className="min-w-0">
@@ -130,7 +131,7 @@ export function CensusRecordsView({
             rowKey={(row) => row.interview.p_Id}
             sort={state.sort}
             onSortChange={handleSortChange}
-            onRowClick={setOpenRecord}
+            onRowClick={(row) => setOpenRecordId(row.interview.p_Id)}
             emptyState={
               <StatePanel
                 tone="empty"
@@ -163,16 +164,13 @@ export function CensusRecordsView({
 
       <DetailPanel
         isOpen={openRecord !== null}
-        onClose={() => setOpenRecord(null)}
+        onClose={() => setOpenRecordId(null)}
         title={CENSUS_COPY.title}
         description={openRecord ? openRecord.interview.h_name : undefined}
         size="lg"
       >
         {openRecord ? (
-          <InterviewDetails
-            interview={openRecord.interview}
-            census={openRecord.census}
-          />
+          <RecordDetails interview={openRecord.interview} census={openRecord.census} />
         ) : null}
       </DetailPanel>
     </div>

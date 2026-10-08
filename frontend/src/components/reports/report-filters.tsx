@@ -7,7 +7,7 @@ import { DateFilter } from "@/components/table/date-filter";
 import { FilterSelect } from "@/components/table/filter-select";
 import { TableToolbar } from "@/components/table/table-toolbar";
 import { useDependentOptions } from "@/hooks/use-dependent-options";
-import { REPORT_COPY } from "@/config/reports";
+import { REPORT_COPY } from "@/config ori/reports";
 import {
   EMPTY_REPORT_SCOPE,
   buildReportHref,

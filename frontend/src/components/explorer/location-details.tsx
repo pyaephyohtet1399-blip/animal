@@ -25,6 +25,11 @@ export interface LocationDetailsProps {
   description?: string;
   /** Rendered below the fields, e.g. a link to the village's own page. */
   action?: ReactNode;
+  /**
+   * Card footer. Left `undefined` for the default note; pass `null` to hide it,
+   * e.g. on pages where census figures are already shown nearby.
+   */
+  footer?: ReactNode;
   className?: string;
 }
 
@@ -42,6 +47,7 @@ export function LocationDetails({
   title = "Selected village",
   description = "Ward / village selected in the explorer.",
   action,
+  footer,
   className,
 }: LocationDetailsProps) {
   if (!village) {
@@ -89,12 +95,16 @@ export function LocationDetails({
         {action}
       </CardContent>
 
-      <CardFooter>
-        <p className="text-xs text-muted-foreground">
-          Household and livestock census figures are added in the later census
-          phases.
-        </p>
-      </CardFooter>
+      {footer === null ? null : (
+        <CardFooter>
+          {footer ?? (
+            <p className="text-xs text-muted-foreground">
+              Household and livestock census figures are added in the later census
+              phases.
+            </p>
+          )}
+        </CardFooter>
+      )}
     </Card>
   );
 }

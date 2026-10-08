@@ -7,7 +7,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { LIVESTOCK_COPY } from "@/config/livestock";
+import { LIVESTOCK_COPY } from "@/config ori/livestock";
 import type { LivestockAnswer } from "@/types/livestock";
 
 export interface LivestockTableProps {

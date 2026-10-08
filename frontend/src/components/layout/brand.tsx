@@ -1,6 +1,6 @@
 import { Sprout } from "lucide-react";
 
-import { APP_SHORT_NAME, DISTRICT_NAME_MM } from "@/config/app";
+import { APP_SHORT_NAME, DISTRICT_NAME_MM } from "@/config ori/app";
 import { cn } from "@/lib/cn";
 
 export interface BrandProps {

@@ -1,5 +1,5 @@
 import { Breadcrumb, type BreadcrumbEntry } from "@/components/ui/breadcrumb";
-import { DISTRICT_NAME } from "@/config/app";
+import { DISTRICT_NAME } from "@/config ori/app";
 import { buildExplorerHref } from "@/lib/explorer";
 import type { LocationNode } from "@/types/explorer";
 

@@ -6,9 +6,10 @@ import { useAppSelector } from "@/store/hooks";
 import { useLogoutMutation } from "@/services/api/authApi";
 import { Brand } from "@/components/layout/brand";
 import { NavList } from "@/components/layout/nav-list";
+import { useOfficerInfo } from "@/components/layout/officer-info";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { COUNTRY_NAME, CURRENT_PHASE, DATA_SOURCE_LABEL, DISTRICT_NAME } from "@/config/app";
+import { COUNTRY_NAME, DISTRICT_NAME } from "@/config ori/app";
 
 export function Topbar() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export function Topbar() {
   const [open, setOpen] = useState(false);
   const user = useAppSelector((state) => state.auth.user);
   const role = useAppSelector((state) => state.auth.role);
+  const officer = useOfficerInfo();
 
   const handleLogout = async () => {
     try {
@@ -49,7 +51,7 @@ export function Topbar() {
                 <span className="text-sm font-medium">{user.loginCode}</span>
                 {role && (
                   <Badge variant="outline" className="hidden sm:inline-flex">
-                    {role}
+                    {officer.label}
                   </Badge>
                 )}
               </Button>
@@ -71,10 +73,6 @@ export function Topbar() {
               )}
             </div>
           )}
-          <Badge variant="outline" className="hidden sm:inline-flex">
-            {DATA_SOURCE_LABEL}
-          </Badge>
-          <Badge className="font-normal">{CURRENT_PHASE}</Badge>
         </div>
       </div>
 

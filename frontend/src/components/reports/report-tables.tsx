@@ -8,7 +8,7 @@ import { CountDisplay } from "@/components/livestock/count-display";
 import { DataTable, type DataTableColumn } from "@/components/table/data-table";
 import { Pagination } from "@/components/table/pagination";
 import { paginate } from "@/lib/census";
-import { REPORT_COPY } from "@/config/reports";
+import { REPORT_COPY } from "@/config ori/reports";
 import type {
   TractReportRow,
   VillageReportRow,

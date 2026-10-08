@@ -12,7 +12,7 @@ import type {
 } from "@/types/census-records";
 import type { LivestockAnswer } from "@/types/livestock";
 import type { TownshipStat } from "@/types/statistics";
-import { getSexCodeLabel } from "@/config/restriction";
+import { getSexCodeLabel } from "@/config ori/restriction";
 import { childOptions, normalizeRecordFilters } from "@/lib/census";
 import { readParam } from "@/lib/url";
 

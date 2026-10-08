@@ -2,7 +2,7 @@ import {
   getRestrictionDimensionLabel,
   getSexCodeLabel,
   NOT_AGE_BOUND,
-} from "@/config/restriction";
+} from "@/config ori/restriction";
 import type { RestrictionDimension, SexCode } from "@/types/census";
 
 export interface RestrictionBadgeProps {

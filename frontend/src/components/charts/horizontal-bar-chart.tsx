@@ -75,7 +75,7 @@ export function HorizontalBarChart({
           <Tooltip {...CHART_TOOLTIP_PROPS} formatter={(value) => [value, valueLabel]} />
           <Bar dataKey="value" radius={[0, 4, 4, 0]} maxBarSize={22}>
             {data.map((datum, index) => (
-              <Cell key={datum.label} fill={barColor(datum, index)} />
+              <Cell key={`${index}-${datum.label}`} fill={barColor(datum, index)} />
             ))}
           </Bar>
         </RechartsBarChart>

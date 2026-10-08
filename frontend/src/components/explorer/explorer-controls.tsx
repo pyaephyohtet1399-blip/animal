@@ -6,7 +6,7 @@ import { useTransition } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { EXPLORER_COPY } from "@/config/explorer";
+import { EXPLORER_COPY } from "@/config ori/explorer";
 import { buildExplorerHref, isScoped, stepUp } from "@/lib/explorer";
 import { EMPTY_SELECTION, type ExplorerSelection, type LocationNode } from "@/types/explorer";
 

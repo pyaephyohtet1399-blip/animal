@@ -3,7 +3,7 @@ import { TriangleAlert } from "lucide-react";
 import { LivestockSummary } from "@/components/livestock/livestock-summary";
 import { MainCategorySection } from "@/components/livestock/main-category-section";
 import { StatePanel } from "@/components/shared/state-panel";
-import { LIVESTOCK_COPY } from "@/config/livestock";
+import { LIVESTOCK_COPY } from "@/config ori/livestock";
 import type { LivestockCensus } from "@/types/livestock";
 
 export interface LivestockSectionProps {

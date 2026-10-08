@@ -1,55 +1,71 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import { InterviewTable } from "@/components/interview/interview-table";
 import { VillageHeader } from "@/components/village/village-header";
 import { VillageSummary } from "@/components/village/village-summary";
-import { getWardVillageChain } from "@/lib/repositories/explorer";
-import { getInterviewsByWardVillage } from "@/lib/repositories/interview";
-import { getLivestockCensusForInterviews } from "@/lib/repositories/livestock";
-import type { WardVillageChain } from "@/lib/repositories/explorer";
-import type { InterviewInfo } from "@/types/census";
-import type { LivestockCensus } from "@/types/livestock";
+import { selectInterviewsByWardVillage } from "@/lib/repositories/interview";
+import { findWardVillageChain } from "@/lib/repositories/explorer";
+import { apiErrorMessage } from "@/services/api/api-error";
+import {
+  useGetInterviewsQuery,
+  useGetTownVillagesQuery,
+  useGetTownshipsQuery,
+  useGetVillageLivestockQuery,
+  useGetWardVillagesQuery,
+} from "@/services/api/censusApi";
 
 export function VillageDetailContent() {
   const params = useParams<{ wvCode: string }>();
   const wvCode = params.wvCode;
 
-  const [chain, setChain] = useState<WardVillageChain | null>(null);
-  const [interviews, setInterviews] = useState<InterviewInfo[]>([]);
-  const [livestock, setLivestock] = useState<Record<string, LivestockCensus>>({});
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const townshipsQuery = useGetTownshipsQuery();
+  const townVillagesQuery = useGetTownVillagesQuery();
+  const wardVillagesQuery = useGetWardVillagesQuery();
 
-  useEffect(() => {
-    if (!wvCode) return;
-    let cancelled = false;
-    getWardVillageChain(wvCode)
-      .then(async (c) => {
-        if (cancelled) return;
-        if (!c) {
-          setError("Village not found");
-          return;
-        }
-        setChain(c);
-        const ivs = await getInterviewsByWardVillage(c.village.code);
-        if (cancelled) return;
-        setInterviews(ivs);
-        const lv = await getLivestockCensusForInterviews(ivs.map((i) => i.p_Id));
-        if (cancelled) return;
-        setLivestock(lv);
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [wvCode]);
+  const locationsReady = Boolean(
+    townshipsQuery.data && townVillagesQuery.data && wardVillagesQuery.data,
+  );
+
+  const chain = useMemo(() => {
+    if (!wvCode || !locationsReady) return null;
+    return findWardVillageChain(
+      wvCode,
+      wardVillagesQuery.data ?? [],
+      townVillagesQuery.data ?? [],
+      townshipsQuery.data ?? [],
+    );
+  }, [
+    wvCode,
+    locationsReady,
+    townshipsQuery.data,
+    townVillagesQuery.data,
+    wardVillagesQuery.data,
+  ]);
+
+  const ready = chain !== null;
+  const interviewsQuery = useGetInterviewsQuery(undefined, { skip: !ready });
+  const livestockQuery = useGetVillageLivestockQuery(wvCode ?? "", { skip: !ready });
+
+  const interviews = useMemo(
+    () => (chain ? selectInterviewsByWardVillage(interviewsQuery.data ?? [], chain.village.code) : []),
+    [chain, interviewsQuery.data],
+  );
+  const livestock = livestockQuery.data ?? {};
+
+  const failedQuery = [
+    townshipsQuery,
+    townVillagesQuery,
+    wardVillagesQuery,
+    ...(ready ? [interviewsQuery, livestockQuery] : []),
+  ].find((query) => query.isError);
+  const notFound = locationsReady && chain === null;
+  const error = failedQuery
+    ? apiErrorMessage(failedQuery.error)
+    : notFound
+      ? "Village not found"
+      : null;
 
   if (error) {
     return (
@@ -61,7 +77,7 @@ export function VillageDetailContent() {
     );
   }
 
-  if (loading || !chain) {
+  if (!locationsReady || !chain || interviewsQuery.isLoading || livestockQuery.isLoading) {
     return (
       <div className="flex flex-col gap-6">
         <div className="h-24 animate-pulse rounded-lg bg-muted" />
@@ -88,7 +104,9 @@ export function VillageDetailContent() {
 
       <InterviewTable
         interviews={interviews}
-        villageName={chain.village.name}
+        village={chain.village}
+        tract={chain.tract}
+        township={chain.township}
         livestockByInterview={livestock}
       />
     </div>

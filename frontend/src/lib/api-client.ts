@@ -82,7 +82,13 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
     }
-    return fetch(`${API_BASE}/${path.replace(/^\//, "")}`, { ...init, headers });
+    // Role-scoped API: bypass the HTTP cache so one account's response is
+    // never replayed to another account on the same URL.
+    return fetch(`${API_BASE}/${path.replace(/^\//, "")}`, {
+      cache: "no-store",
+      ...init,
+      headers,
+    });
   };
 
   let res = await doFetch();

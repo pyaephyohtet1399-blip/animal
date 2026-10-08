@@ -1,14 +1,15 @@
-import { apiFetch } from "@/lib/api-client";
 import type { Category, MainCategory } from "@/types/census";
 
-interface ApiCategory {
+export interface ApiCategory {
   categoryId: number;
   name: string;
 }
 
-const TYPE_ORDER = ["big", "small", "poultry", "breeding"] as const;
+export const CATEGORY_TYPES = ["big", "small", "poultry", "breeding"] as const;
 
-const TYPE_TO_MCAT: Record<(typeof TYPE_ORDER)[number], string> = {
+export type CategoryType = (typeof CATEGORY_TYPES)[number];
+
+const TYPE_TO_MCAT: Record<CategoryType, string> = {
   big: "MC1",
   small: "MC2",
   poultry: "MC3",
@@ -22,21 +23,24 @@ const MAIN_CATEGORIES: MainCategory[] = [
   { mcat_id: "MC4", name: "မျိုးတိရစ္ဆာန်" },
 ];
 
-/** Data access for the `main_category` and `category` tables. */
-export async function getMainCategories(): Promise<MainCategory[]> {
+/** Static main-category list (`main_category` rows are fixed in the app). */
+export function getMainCategories(): MainCategory[] {
   return MAIN_CATEGORIES;
 }
 
-export async function getCategories(): Promise<Category[]> {
-  const results = await Promise.all(
-    TYPE_ORDER.map((type) => apiFetch<{ data: ApiCategory[] }>(`/categories/${type}`)),
-  );
-
+/**
+ * Merge the four `/categories/:type` responses into one id-ordered list.
+ *
+ * The backend numbers animals within each type, so a global `cat_id` is
+ * assigned here in type order — the same order the mobile app records.
+ * `results` must be aligned with `CATEGORY_TYPES`.
+ */
+export function buildCategories(results: Array<{ data: ApiCategory[] }>): Category[] {
   const categories: Category[] = [];
   let globalIndex = 1;
 
   results.forEach((res, i) => {
-    const type = TYPE_ORDER[i];
+    const type = CATEGORY_TYPES[i];
     if (!type) return;
     const mcat_id = TYPE_TO_MCAT[type];
     res.data.forEach((item) => {

@@ -1,28 +1,22 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { CensusRecordsView } from "@/components/census/census-records-view";
 import { PageHeader } from "@/components/shared/page-header";
-import { CENSUS_COPY } from "@/config/census";
+import { CENSUS_COPY } from "@/config ori/census";
 import {
   normalizeCensusState,
   parseCensusState,
   selectCensusPage,
 } from "@/lib/census";
-import { getCensusDataset } from "@/lib/repositories/census";
-import type { CensusDataset } from "@/types/census-records";
+import { apiErrorMessage } from "@/services/api/api-error";
+import { useGetCensusDatasetQuery } from "@/services/api/censusApi";
 
 export function CensusContent() {
   const searchParams = useSearchParams();
-  const [dataset, setDataset] = useState<CensusDataset | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getCensusDataset()
-      .then(setDataset)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
-  }, []);
+  const { data: dataset, error, isError } = useGetCensusDatasetQuery();
+  const errorMessage = isError ? apiErrorMessage(error) : null;
 
   const searchParamsRecord = useMemo(() => {
     const record: Record<string, string | string[] | undefined> = {};
@@ -32,12 +26,12 @@ export function CensusContent() {
     return record;
   }, [searchParams]);
 
-  if (error) {
+  if (errorMessage) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title={CENSUS_COPY.title} subtitle={CENSUS_COPY.titleMm} />
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-destructive">
-          {error}
+          {errorMessage}
         </div>
       </div>
     );

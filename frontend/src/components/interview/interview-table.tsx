@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
-import { InterviewDetails } from "@/components/interview/interview-details";
-import { InterviewRow } from "@/components/interview/interview-row";
+import { buildCensusColumns } from "@/components/census/census-columns";
+import { RecordDetails } from "@/components/interview/record-details";
 import { StatePanel } from "@/components/shared/state-panel";
+import { DataTable } from "@/components/table/data-table";
 import {
   Card,
   CardContent,
@@ -13,43 +14,86 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DetailPanel } from "@/components/ui/detail-panel";
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { INTERVIEW_COLUMNS, INTERVIEW_COPY } from "@/config/interview";
+import { INTERVIEW_COPY } from "@/config ori/interview";
+import { sortCensusRecords } from "@/lib/census";
 import type { InterviewInfo } from "@/types/census";
+import type { PlaceRef } from "@/types/explorer";
+import type { CensusRecord, CensusSortKey } from "@/types/census-records";
 import { EMPTY_LIVESTOCK_CENSUS, type LivestockCensus } from "@/types/livestock";
+import type { SortState } from "@/types/ui";
 
 export interface InterviewTableProps {
   /** Interviews already filtered to this village. */
   interviews: InterviewInfo[];
-  villageName: string;
+  /** Place of the village this table belongs to; the same for every row. */
+  village: PlaceRef;
+  tract: PlaceRef;
+  township: PlaceRef;
   /** Livestock census per interview, keyed by `p_Id`. */
   livestockByInterview: Record<string, LivestockCensus>;
 }
 
 /**
- * Household interviews for one village, with the selected interview opened in a
- * side panel.
+ * Household interviews for one village, shown as the census records table.
  *
- * The open record is held as a `p_Id` rather than as the record itself, so the
- * panel always shows whatever the table currently holds and closing it is a
- * single state reset.
+ * Every row carries the same place triple, so the respondent, township, tract
+ * and village columns describe the record the same way the records page does —
+ * one column list, one Details panel, one edit path for both screens. Sorting
+ * stays local: the rows are already scoped to this village, so a URL round-trip
+ * would buy nothing.
  */
 export function InterviewTable({
   interviews,
-  villageName,
+  village,
+  tract,
+  township,
   livestockByInterview,
 }: InterviewTableProps) {
   const [openInterviewId, setOpenInterviewId] = useState<number | null>(null);
+  const [sort, setSort] = useState<SortState<CensusSortKey>>({
+    key: "ans_date",
+    direction: "desc",
+  });
 
-  const openInterview =
-    interviews.find((interview) => interview.p_Id === openInterviewId) ?? null;
+  const records = useMemo<CensusRecord[]>(
+    () =>
+      interviews.map((interview) => {
+        const census = livestockByInterview[String(interview.p_Id)] ?? EMPTY_LIVESTOCK_CENSUS;
+        return {
+          interview,
+          township,
+          tract,
+          village,
+          livestockCount: census.totalCount,
+          answerCount: census.answerCount,
+          mainCategoryIds: [...new Set(census.groups.map((group) => group.mainCategoryId))],
+          categoryIds: [
+            ...new Set(census.groups.flatMap((group) => group.answers.map((a) => a.categoryId))),
+          ],
+          census,
+        };
+      }),
+    [interviews, village, tract, township, livestockByInterview],
+  );
+
+  const sorted = useMemo(() => sortCensusRecords(records, sort), [records, sort]);
+
+  const openRecord =
+    openInterviewId === null
+      ? null
+      : (records.find((record) => record.interview.p_Id === openInterviewId) ?? null);
+
+  const columns = buildCensusColumns({
+    onOpen: (record) => setOpenInterviewId(record.interview.p_Id),
+  });
+
+  function handleSortChange(key: string) {
+    const sameColumn = sort.key === key;
+    setSort({
+      key: key as CensusSortKey,
+      direction: sameColumn && sort.direction === "asc" ? "desc" : "asc",
+    });
+  }
 
   return (
     <>
@@ -60,61 +104,36 @@ export function InterviewTable({
         </CardHeader>
 
         <CardContent className="px-0 py-0">
-          {interviews.length === 0 ? (
-            <StatePanel
-              tone="empty"
-              title={INTERVIEW_COPY.emptyTitle}
-              description={`No household interview records are stored for ${villageName}.`}
-            />
-          ) : (
-            <Table>
-              <TableCaption>
-                {interviews.length}{" "}
-                {interviews.length === 1 ? "record" : "records"} for {villageName}
-              </TableCaption>
-
-              <TableHeader>
-                <TableRow>
-                  {INTERVIEW_COLUMNS.map((column) => (
-                    <TableHead
-                      key={column.column}
-                      className={column.align === "right" ? "text-right" : undefined}
-                    >
-                      {column.label}
-                    </TableHead>
-                  ))}
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-
-              <TableBody>
-                {interviews.map((interview) => (
-                  <InterviewRow
-                    key={interview.p_Id}
-                    interview={interview}
-                    onOpen={setOpenInterviewId}
-                  />
-                ))}
-              </TableBody>
-            </Table>
-          )}
+          <DataTable
+            caption={`${interviews.length} ${
+              interviews.length === 1 ? "record" : "records"
+            } for ${village.name}`}
+            columns={columns}
+            rows={sorted}
+            rowKey={(row) => row.interview.p_Id}
+            sort={sort}
+            onSortChange={handleSortChange}
+            onRowClick={(row) => setOpenInterviewId(row.interview.p_Id)}
+            emptyState={
+              <StatePanel
+                tone="empty"
+                title={INTERVIEW_COPY.emptyTitle}
+                description={`No household interview records are stored for ${village.name}.`}
+              />
+            }
+          />
         </CardContent>
       </Card>
 
       <DetailPanel
-        isOpen={openInterview !== null}
+        isOpen={openRecord !== null}
         onClose={() => setOpenInterviewId(null)}
         title={INTERVIEW_COPY.detailsTitle}
-        description={openInterview ? openInterview.h_name : villageName}
+        description={openRecord ? openRecord.interview.h_name : village.name}
         size="lg"
       >
-        {openInterview ? (
-          <InterviewDetails
-            interview={openInterview}
-            census={
-              livestockByInterview[String(openInterview.p_Id)] ?? EMPTY_LIVESTOCK_CENSUS
-            }
-          />
+        {openRecord ? (
+          <RecordDetails interview={openRecord.interview} census={openRecord.census} />
         ) : null}
       </DetailPanel>
     </>

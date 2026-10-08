@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { ChartCard } from "@/components/charts/chart-card";
 import type { ChartDatum } from "@/components/charts/chart-config";
@@ -17,22 +17,16 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PrintButton } from "@/components/shared/print-button";
 import { StatePanel } from "@/components/shared/state-panel";
 import { StatCard } from "@/components/shared/stat-card";
-import { REPORT_COPY } from "@/config/reports";
+import { REPORT_COPY } from "@/config ori/reports";
 import { buildReportBundle, parseReportScope } from "@/lib/reports";
-import { getCensusDataset } from "@/lib/repositories/census";
-import type { CensusDataset } from "@/types/census-records";
+import { apiErrorMessage } from "@/services/api/api-error";
+import { useGetCensusDatasetQuery } from "@/services/api/censusApi";
 import type { ReportBundle } from "@/lib/reports";
 
 export function ReportsContent() {
   const searchParams = useSearchParams();
-  const [dataset, setDataset] = useState<CensusDataset | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    getCensusDataset()
-      .then(setDataset)
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"));
-  }, []);
+  const { data: dataset, error, isError } = useGetCensusDatasetQuery();
+  const errorMessage = isError ? apiErrorMessage(error) : null;
 
   const searchParamsRecord = useMemo(() => {
     const record: Record<string, string | string[] | undefined> = {};
@@ -47,12 +41,12 @@ export function ReportsContent() {
     return buildReportBundle(dataset, parseReportScope(searchParamsRecord));
   }, [dataset, searchParamsRecord]);
 
-  if (error) {
+  if (errorMessage) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title={REPORT_COPY.title} subtitle={REPORT_COPY.titleMm} />
         <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-6 text-destructive">
-          {error}
+          {errorMessage}
         </div>
       </div>
     );
@@ -71,7 +65,10 @@ export function ReportsContent() {
 
   const livestockByCategory: ChartDatum[] = bundle.categories
     .filter((row) => row.count > 0)
-    .map((row) => ({ label: row.categoryName, value: row.count }));
+    .map((row) => ({
+      label: `${row.mainCategoryName}(${row.categoryName})`,
+      value: row.count,
+    }));
 
   const chartCopy = REPORT_COPY.charts.livestockByCategory;
 
@@ -132,7 +129,7 @@ export function ReportsContent() {
               data={livestockByCategory}
               valueLabel={chartCopy.valueLabel}
               categoryLabel={chartCopy.categoryLabel}
-              labelWidth={150}
+              labelWidth={190}
             />
           </ChartCard>
 

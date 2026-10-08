@@ -4,7 +4,7 @@ import { Geist, Geist_Mono, Noto_Sans_Myanmar } from "next/font/google";
 import { Providers } from "@/providers/store-provider";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { LayoutWrapper } from "@/components/layout/layout-wrapper";
-import { APP_NAME, COUNTRY_NAME, DISTRICT_NAME } from "@/config/app";
+import { APP_NAME, COUNTRY_NAME, DISTRICT_NAME } from "@/config ori/app";
 
 import "./globals.css";
 

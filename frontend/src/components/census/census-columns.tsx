@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { CountDisplay } from "@/components/livestock/count-display";
 import type { DataTableColumn } from "@/components/table/data-table";
-import { CENSUS_COPY } from "@/config/census";
+import { CENSUS_COPY } from "@/config ori/census";
 import type { CensusRecord } from "@/types/census-records";
 
 export interface CensusColumnsProps {

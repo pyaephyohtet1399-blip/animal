@@ -7,7 +7,7 @@ import { GroupedTable, type GroupedColumn } from "@/components/reports/report-gr
 import { ReportSection } from "@/components/reports/report-section";
 import { Pagination } from "@/components/table/pagination";
 import { paginate } from "@/lib/census";
-import { REPORT_COPY } from "@/config/reports";
+import { REPORT_COPY } from "@/config ori/reports";
 import type {
   LargeLivestockReportRow,
   LivestockSexSummaryRow,

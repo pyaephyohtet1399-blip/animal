@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { navigationSections } from "@/config/navigation";
+import { navigationSections } from "@/config ori/navigation";
 import { cn } from "@/lib/cn";
 import { isActiveRoute } from "@/lib/routes";
 

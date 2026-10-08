@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 import { ExplorerContent } from "./explorer-content";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { DISTRICT_NAME } from "@/config/app";
+import { DISTRICT_NAME } from "@/config ori/app";
 
 export const metadata: Metadata = {
   title: "Data Explorer",

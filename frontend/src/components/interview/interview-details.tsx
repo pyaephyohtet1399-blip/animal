@@ -1,7 +1,7 @@
 import { LivestockSection } from "@/components/livestock/livestock-section";
 import { DetailList } from "@/components/shared/detail-list";
 import { Separator } from "@/components/ui/separator";
-import { INTERVIEW_COLUMNS } from "@/config/interview";
+import { INTERVIEW_COLUMNS } from "@/config ori/interview";
 import type { InterviewInfo } from "@/types/census";
 import type { LivestockCensus } from "@/types/livestock";
 import type { DetailItem } from "@/types/ui";

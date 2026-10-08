@@ -1,6 +1,5 @@
 import { buildReportBundle, EMPTY_REPORT_SCOPE } from "@/lib/reports";
-import { getCensusDataset } from "@/lib/repositories/census";
-import type { CensusRecord } from "@/types/census-records";
+import type { CensusDataset, CensusRecord } from "@/types/census-records";
 import type {
   CategoryStat,
   CensusTotals,
@@ -21,7 +20,9 @@ import type {
  *
  * Only the two things the dashboard needs and the reports do not provide are
  * added here — the full main-category list (including groups with no animals)
- * and the most recently answered households.
+ * and the most recently answered households. The input is the cached dataset
+ * from `useGetCensusDatasetQuery`, so opening the dashboard after the reports
+ * costs no extra requests.
  */
 
 /** How many households the dashboard lists under "recent". */
@@ -45,7 +46,7 @@ function toRecentInterview(record: CensusRecord): RecentInterview {
  * can state that a group exists and holds zero rather than omitting it.
  */
 function mainCategoryTotals(
-  dataset: Awaited<ReturnType<typeof getCensusDataset>>,
+  dataset: CensusDataset,
   categories: CategoryStat[],
 ): MainCategoryStat[] {
   const totals = new Map<string, number>();
@@ -67,8 +68,7 @@ function mainCategoryTotals(
  * Sex totals. Only codes with animals are listed, matching the report: a code
  * with nothing behind it would be a bar of length zero.
  */
-export async function getDashboardStatistics(): Promise<DashboardStatistics> {
-  const dataset = await getCensusDataset();
+export function buildDashboardStatistics(dataset: CensusDataset): DashboardStatistics {
   // An empty scope, so the bundle covers the whole district.
   const bundle = buildReportBundle(dataset, EMPTY_REPORT_SCOPE);
 

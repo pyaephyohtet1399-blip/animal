@@ -1,7 +1,7 @@
 import { CountDisplay } from "@/components/livestock/count-display";
 import { LivestockSummary } from "@/components/livestock/livestock-summary";
 import { Separator } from "@/components/ui/separator";
-import { DASHBOARD_COPY } from "@/config/dashboard";
+import { DASHBOARD_COPY } from "@/config ori/dashboard";
 import type { CensusTotals, MainCategoryStat } from "@/types/statistics";
 
 export interface LivestockOverviewProps {
