@@ -365,14 +365,18 @@ describe('PUT /api/v1/surveys/:surveyId (D-13 edit rules)', () => {
     expect(interview.hName).toBe('ပြင်ဆင်ပြီး');
   });
 
-  test('rejects edit after submit (409)', async () => {
+  test('village edits own submitted survey (D-60: no draft lock)', async () => {
     const surveyId = await createAndSubmit();
     const res = await request(app)
       .put(`/api/v1/surveys/${surveyId}`)
       .set(auth(villageToken))
-      .send(VALID_BODY);
-    expect(res.status).toBe(409);
-    expect(res.body.error.code).toBe('invalid_state');
+      .send({ ...VALID_BODY, hName: 'ပြင်ဆင်ပြီး', hAge: 46 });
+    expect(res.status).toBe(200);
+    expect(res.body.data.status).toBe('submitted');
+    expect(res.body.data.syncVersion).toBe(2);
+
+    const interview = await InterviewInfo.findOne({}).lean();
+    expect(interview.hName).toBe('ပြင်ဆင်ပြီး');
   });
 
   test('township can edit own township survey (any status)', async () => {
@@ -451,12 +455,18 @@ describe('DELETE /api/v1/surveys/:surveyId (D-14)', () => {
     expect(audit.path).toContain(`/api/v1/surveys/${created.body.data.surveyId}`);
   });
 
-  test('village cannot delete submitted survey (409)', async () => {
+  test('village deletes own submitted survey (soft, D-60)', async () => {
     const surveyId = await createAndSubmit();
     const res = await request(app)
       .delete(`/api/v1/surveys/${surveyId}`)
       .set(auth(villageToken));
-    expect(res.status).toBe(409);
+    expect(res.status).toBe(200);
+
+    const survey = await Survey.findOne({ surveyId }).lean();
+    expect(survey.deletedAt).toBeInstanceOf(Date);
+
+    const summary = await SurveySummary.findOne({ wvCode: VILLAGE.wvCode }).lean();
+    expect(summary.totalSurveys).toBe(0);
   });
 
   test('district deletes any survey; counted status reverses summary', async () => {

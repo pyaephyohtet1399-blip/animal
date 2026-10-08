@@ -14,9 +14,9 @@ const SORT_WHITELIST = ['createdAt', '-createdAt', 'updatedAt', '-updatedAt', 's
 const LIST_PROJECTION =
   'surveyId status interviewId villageHeadmanId districtCode tspCode tvgCode wvCode syncVersion createdAt updatedAt';
 const POPULATE_FIELDS = {
-  village: 'hName hPhone hEdu hGender hAge ansDate',
-  township: 'hName hPhone hEdu hGender hAge ansDate wvCode',
-  district: 'hName hPhone hEdu hGender hAge ansDate tspCode wvCode'
+  village: 'hNo hName hPhone hEdu hGender hAge ansDate',
+  township: 'hNo hName hPhone hEdu hGender hAge ansDate wvCode',
+  district: 'hNo hName hPhone hEdu hGender hAge ansDate tspCode wvCode'
 };
 
 const isCounted = (status) => COUNTED_STATUSES.includes(status);
@@ -25,9 +25,6 @@ const canEdit = (survey, user) => {
   if (user.role === 'village') {
     if (survey.villageHeadmanId?.toString() !== user.userId) {
       throw new ApiError(403, 'Cannot edit this survey', 'forbidden');
-    }
-    if (survey.status !== 'draft') {
-      throw new ApiError(409, 'Survey is locked after submit', 'invalid_state');
     }
     return;
   }
@@ -119,6 +116,7 @@ const create = async (user, payload, redis, options = {}) => {
           {
             interviewId,
             hName: payload.hName,
+            ...(payload.hNo !== undefined ? { hNo: payload.hNo } : {}),
             hEdu: payload.hEdu,
             hGender: payload.hGender,
             hPhone: payload.hPhone,
@@ -178,6 +176,7 @@ const update = async (user, surveyId, payload, redis) => {
   if (!interview) throw new ApiError(404, 'Interview not found', 'not_found');
   interview.set({
     hName: payload.hName,
+    ...(payload.hNo !== undefined ? { hNo: payload.hNo } : {}),
     hEdu: payload.hEdu,
     hGender: payload.hGender,
     hPhone: payload.hPhone,
@@ -200,12 +199,9 @@ const update = async (user, surveyId, payload, redis) => {
 
 const remove = async (user, surveyId, redis) => {
   const survey = await loadScoped(user, surveyId);
-  const ownDraft = user.role === 'village' && survey.villageHeadmanId?.toString() === user.userId;
-  if (user.role !== 'district' && !ownDraft) {
+  const ownSurvey = user.role === 'village' && survey.villageHeadmanId?.toString() === user.userId;
+  if (user.role !== 'district' && !ownSurvey) {
     throw new ApiError(403, 'Cannot delete this survey', 'forbidden');
-  }
-  if (user.role === 'village' && survey.status !== 'draft') {
-    throw new ApiError(409, 'Survey can only be deleted while draft', 'invalid_state');
   }
   if (isCounted(survey.status)) await summaryService.updateSummary(survey.toObject(), -1);
   survey.deletedAt = new Date();

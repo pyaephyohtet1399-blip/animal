@@ -6,6 +6,7 @@ const compression = require('compression');
 
 const requestId = require('./middleware/requestId');
 const requestLogger = require('./middleware/requestLogger');
+const uploadBody = require('./middleware/uploadBody');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 const corsOptions = require('./config/cors');
@@ -27,6 +28,7 @@ const createApp = () => {
   );
   app.use(cors(corsOptions));
   app.use(compression({ level: 6, threshold: 1024 }));
+  app.use(uploadBody);
   app.use(express.json({ limit: process.env.BODY_LIMIT || '1mb' }));
 
   app.use(requestLogger);

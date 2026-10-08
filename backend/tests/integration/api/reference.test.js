@@ -95,7 +95,7 @@ describe('GET /api/v1/locations endpoints', () => {
     expect(res.body.data[0].tspName).toBe('ဝမ်းတွင်း');
     expect(res.body.data[0].districtCode).toBe('MMR0100');
     expect(res.body.data[0]).not.toHaveProperty('_id');
-    expect(res.headers['cache-control']).toBe('public, max-age=3600');
+    expect(res.headers['cache-control']).toBe('no-store');
     expect(res.headers['x-ratelimit-limit']).toBe('100');
   });
 
@@ -115,7 +115,7 @@ describe('GET /api/v1/locations endpoints', () => {
     const own = await get('/api/v1/locations/townvgs', villageToken);
     expect(own.status).toBe(200);
     expect(own.body.data.map((t) => t.tvgCode)).toEqual(['MMR010031047']);
-    expect(own.headers['cache-control']).toBe('public, max-age=3600');
+    expect(own.headers['cache-control']).toBe('no-store');
 
     const other = await get('/api/v1/locations/townvgs?tspCode=MMR010028', villageToken);
     expect(other.status).toBe(200);
@@ -138,7 +138,7 @@ describe('GET /api/v1/locations endpoints', () => {
 
     const all = await get('/api/v1/locations/townvgs', districtToken);
     expect(all.body.data).toHaveLength(2);
-    expect(all.headers['cache-control']).toBe('public, max-age=3600');
+    expect(all.headers['cache-control']).toBe('no-store');
   });
 
   test('village sees only its own wardvillage regardless of tvgCode param', async () => {
@@ -204,7 +204,7 @@ describe('GET /api/v1/categories/:type', () => {
       { categoryId: 1, name: 'ဒေသနွား' },
       { categoryId: 2, name: 'အသားစားနွား' }
     ]);
-    expect(big.headers['cache-control']).toBe('public, max-age=3600');
+    expect(big.headers['cache-control']).toBe('no-store');
 
     const poultry = await get('/api/v1/categories/poultry', villageToken);
     expect(poultry.status).toBe(200);
@@ -225,7 +225,7 @@ describe('GET /api/v1/categories/:type', () => {
       { categoryId: 1, name: 'ဒေသနွား' },
       { categoryId: 6, name: 'သိုး' }
     ]);
-    expect(res.headers['cache-control']).toBe('public, max-age=3600');
+    expect(res.headers['cache-control']).toBe('no-store');
   });
 
   test('requires authentication', async () => {
@@ -261,7 +261,7 @@ describe('GET /api/v1/categories/:type/:categoryId', () => {
     const res = await get('/api/v1/categories/big/1', villageToken);
     expect(res.status).toBe(200);
     expect(res.body.data).toEqual({ categoryId: 1, name: 'ဒေသနွား' });
-    expect(res.headers['cache-control']).toBe('public, max-age=3600');
+    expect(res.headers['cache-control']).toBe('no-store');
 
     const breeding = await get('/api/v1/categories/breeding/6', villageToken);
     expect(breeding.status).toBe(200);

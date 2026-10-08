@@ -23,8 +23,8 @@ describe('loadEnv', () => {
   test('validates and writes normalized values to process.env', () => {
     delete process.env.PORT;
     const env = loadEnv();
-    expect(env.PORT).toBe(3000);
-    expect(process.env.PORT).toBe('3000');
+    expect(env.PORT).toBe(3100);
+    expect(process.env.PORT).toBe('3100');
     expect(env.MONGODB_URI).toContain('mongodb+srv');
   });
 

@@ -3,4 +3,5 @@ node_modules/
 coverage/
 logs/
 *.log
+uploads/
 data/generated-passwords.csv

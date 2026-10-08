@@ -8,3 +8,4 @@ process.env.RATE_LIMIT_WINDOW_MS = process.env.RATE_LIMIT_WINDOW_MS || '60000';
 process.env.RATE_LIMIT_ANON_MAX = process.env.RATE_LIMIT_ANON_MAX || '10000';
 process.env.MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/livestock-test';
 process.env.REDIS_URL = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
+process.env.UPLOAD_ARCHIVE_DIR = process.env.UPLOAD_ARCHIVE_DIR || '/tmp/livestock-test-uploads';

@@ -8,7 +8,7 @@ const assignOwn = (req, key, value) => {
   });
 };
 
-const validate = (schema) => (req, res, next) => {
+const validate = (schema, mapDetails) => (req, res, next) => {
   try {
     const parsed = schema.parse({
       body: req.body,
@@ -25,7 +25,10 @@ const validate = (schema) => (req, res, next) => {
       error: {
         code: 'validation_error',
         message: 'Request validation failed',
-        details: error.issues.map((i) => ({ field: i.path.join('.'), message: i.message }))
+        details: error.issues.map((issue) => {
+          const detail = { field: issue.path.join('.'), message: issue.message };
+          return mapDetails ? mapDetails(issue, detail, req) : detail;
+        })
       }
     });
   }

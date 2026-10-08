@@ -304,7 +304,7 @@ describe('POST /api/v1/sync/push — update + version conflict (D-19)', () => {
     expect(survey.syncVersion).toBe(2);
   });
 
-  test('update after submit → rejected invalid_state (D-13)', async () => {
+  test('update after submit → accepted (D-60: village owns submitted rows)', async () => {
     const created = await pushCreate();
     const submit = await request(app)
       .post(`/api/v1/surveys/${created.surveyId}/submit`)
@@ -316,8 +316,9 @@ describe('POST /api/v1/sync/push — update + version conflict (D-19)', () => {
       { localRowId: 2, op: 'update', surveyId: 1, syncVersion: 99, survey: ANIMALS }
     ]);
     expect(res.body.data.results[0]).toMatchObject({
-      status: 'rejected',
-      error: { code: 'invalid_state' }
+      status: 'updated',
+      surveyId: 1,
+      syncVersion: 99
     });
   });
 

@@ -11,7 +11,7 @@ describe('envSchema', () => {
   test('accepts valid env with defaults', () => {
     const result = envSchema.safeParse(validEnv);
     expect(result.success).toBe(true);
-    expect(result.data.PORT).toBe(3000);
+    expect(result.data.PORT).toBe(3100);
     expect(result.data.JWT_ACCESS_TTL).toBe('15m');
     expect(result.data.JWT_REFRESH_TTL).toBe('7d');
     expect(result.data.RATE_LIMIT_WINDOW_MS).toBe(60000);

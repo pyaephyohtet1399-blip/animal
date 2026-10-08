@@ -39,6 +39,10 @@ const breedingAnimalSchema = z.object({
 
 const interviewShape = {
   hName: z.string().trim().min(1).max(70),
+  hNo: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().trim().min(1).max(20).optional()
+  ),
   hEdu: z.string().trim().min(1).max(50),
   hGender: z.string().trim().min(1).max(20),
   hPhone: z

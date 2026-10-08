@@ -4,6 +4,7 @@ const interviewInfoSchema = new mongoose.Schema(
   {
     interviewId: { type: Number, required: true, unique: true },
     hName: { type: String, required: true, trim: true },
+    hNo: { type: String, trim: true },
     hEdu: { type: String, required: true, trim: true },
     hGender: { type: String, required: true, trim: true },
     hPhone: { type: String, required: true, trim: true },

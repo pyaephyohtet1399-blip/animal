@@ -8,6 +8,7 @@ const locationRoutes = require('./location.routes');
 const categoryRoutes = require('./category.routes');
 const surveyRoutes = require('./survey.routes');
 const syncRoutes = require('./sync.routes');
+const uploadRoutes = require('./upload.routes');
 const reportRoutes = require('./report.routes');
 
 const router = express.Router();
@@ -29,6 +30,7 @@ router.use('/locations', ...protectedChain, locationRoutes);
 router.use('/categories', ...protectedChain, categoryRoutes);
 router.use('/surveys', ...protectedChain, surveyRoutes);
 router.use('/sync', ...protectedChain, syncRoutes);
+router.use('/upload', ...protectedChain, uploadRoutes);
 router.use('/reports', ...protectedChain, reportRoutes);
 
 module.exports = router;

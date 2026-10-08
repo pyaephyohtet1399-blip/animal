@@ -34,12 +34,12 @@ const buildSummaryInc = (survey, sign) => {
   };
 };
 
-const updateSummary = async (survey, sign = 1) => {
+const updateSummary = async (survey, sign = 1, session = null) => {
   const inc = buildSummaryInc(survey, sign);
   return SurveySummary.findOneAndUpdate(
     { tspCode: survey.tspCode, wvCode: survey.wvCode },
     { $inc: inc, $set: { lastUpdated: new Date() } },
-    { upsert: true }
+    { upsert: true, ...(session ? { session } : {}) }
   );
 };
 
