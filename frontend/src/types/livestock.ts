@@ -14,6 +14,8 @@ export interface LivestockAnswer {
   count: number;
   /** `category.cat_id` */
   categoryId: string;
+  /** `category.source_cat_id` */
+   sourceCategoryId: number;  
   /** `category.cat_name` */
   categoryName: string;
   /** `main_category.mcat_id` */

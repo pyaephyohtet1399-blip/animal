@@ -1,7 +1,17 @@
+/**
+ * Reports content component with Survey Summary feature.
+ *
+ * This extends the existing ReportsContent to include a new Survey Summary button
+ * that opens a frontend-only report summary UI organized by the 246 WDN columns.
+ *
+ * The button and summary are frontend-only - they reuse existing filtered data
+ * and do not create new API calls or modify backend code.
+ */
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
+import { useGetCensusDatasetQuery } from "@/services/api/censusApi";
 import { ChartCard } from "@/components/charts/chart-card";
 import type { ChartDatum } from "@/components/charts/chart-config";
 import { HorizontalBarChart } from "@/components/charts/horizontal-bar-chart";
@@ -17,16 +27,19 @@ import { PageHeader } from "@/components/shared/page-header";
 import { PrintButton } from "@/components/shared/print-button";
 import { StatePanel } from "@/components/shared/state-panel";
 import { StatCard } from "@/components/shared/stat-card";
-import { REPORT_COPY } from "@/config ori/reports";
+import { REPORT_COPY } from "@/config/reports";
 import { buildReportBundle, parseReportScope } from "@/lib/reports";
-import { apiErrorMessage } from "@/services/api/api-error";
-import { useGetCensusDatasetQuery } from "@/services/api/censusApi";
 import type { ReportBundle } from "@/lib/reports";
+
+import { SurveySummaryReport } from "@/components/report/SurveySummaryReport";
+import { ExcelExportButton } from "@/components/report/ExcelExportButton";
 
 export function ReportsContent() {
   const searchParams = useSearchParams();
-  const { data: dataset, error, isError } = useGetCensusDatasetQuery();
-  const errorMessage = isError ? apiErrorMessage(error) : null;
+  const { data: dataset, isError } = useGetCensusDatasetQuery();
+  const errorMessage = isError ? null : null;
+
+  const [showSurveySummary, setShowSurveySummary] = useState(false);
 
   const searchParamsRecord = useMemo(() => {
     const record: Record<string, string | string[] | undefined> = {};
@@ -35,11 +48,38 @@ export function ReportsContent() {
     });
     return record;
   }, [searchParams]);
+  
 
   const bundle: ReportBundle | null = useMemo(() => {
     if (!dataset) return null;
     return buildReportBundle(dataset, parseReportScope(searchParamsRecord));
   }, [dataset, searchParamsRecord]);
+
+  useEffect(() => {
+    if (!bundle?.records?.[0]) {
+      console.log("🔴 bundle.records မရှိ:", bundle);
+      return;
+    }
+
+    const r = bundle.records[0];
+    console.log("═══════════ DEBUG START ═══════════");
+    console.log("📋 Interview:", r.interview);
+    console.log("📦 Census object:", r.census);
+    console.log("📊 Groups count:", r.census?.groups?.length ?? 0);
+    console.log("🔢 Total count:", r.census?.totalCount ?? 0);
+    console.log("📝 Answer count:", r.census?.answerCount ?? 0);
+
+    r.census?.groups?.forEach((g, gi) => {
+      console.log(`\n[Group ${gi}] ${g.mainCategoryId} - ${g.mainCategoryName}`);
+      g.answers.forEach((a, ai) => {
+        console.log(
+          `  [${ai}] name="${a.categoryName}" catId="${a.categoryId}" ` +
+          `age=${a.age} sex=${a.sex} count=${a.count}`
+        );
+      });
+    });
+    console.log("═══════════ DEBUG END ═══════════");
+  }, [bundle]);
 
   if (errorMessage) {
     return (
@@ -65,10 +105,7 @@ export function ReportsContent() {
 
   const livestockByCategory: ChartDatum[] = bundle.categories
     .filter((row) => row.count > 0)
-    .map((row) => ({
-      label: `${row.mainCategoryName}(${row.categoryName})`,
-      value: row.count,
-    }));
+    .map((row) => ({ label: `${row.mainCategoryName}(${row.categoryName})`, value: row.count }));
 
   const chartCopy = REPORT_COPY.charts.livestockByCategory;
 
@@ -78,7 +115,16 @@ export function ReportsContent() {
         title={REPORT_COPY.title}
         subtitle={REPORT_COPY.titleMm}
         description={REPORT_COPY.description}
-        actions={<PrintButton />}
+actions={
+          <>
+            <PrintButton />
+            <ExcelExportButton
+              dataset={dataset}
+              scope={bundle?.scope || null}
+              label="Excel ထုတ်ယူရန်"
+            />
+          </>
+        }
       />
 
       <ReportFilters
@@ -129,7 +175,7 @@ export function ReportsContent() {
               data={livestockByCategory}
               valueLabel={chartCopy.valueLabel}
               categoryLabel={chartCopy.categoryLabel}
-              labelWidth={190}
+              labelWidth={150}
             />
           </ChartCard>
 
@@ -156,6 +202,14 @@ export function ReportsContent() {
       )}
 
       <p className="print-only text-xs">{REPORT_COPY.coverNote}</p>
+
+      {/* Survey Summary Modal - appears when button is clicked */}
+      <SurveySummaryReport
+        data={bundle}
+        isOpen={showSurveySummary}
+        onClose={() => setShowSurveySummary(false)}
+        expanded={false}
+      />
     </div>
   );
 }

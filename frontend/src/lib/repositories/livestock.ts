@@ -54,6 +54,7 @@ export const AGE_LIMIT_CODE: Record<string, string> = {
   LessThanOne: "LY1",
   Between1and3: "Y1B3",
   Over3: "GY3",
+  OverOne: "OY1",           // ← အသစ် (poultry)
   Under2months: "LM2",
   Between2and6months: "M2B6",
   Over6months: "GM6",
@@ -106,16 +107,17 @@ export function buildCensus(
       if (!category || !mainCategory) continue;
 
       allAnswers.push({
-        id: answerId++,
-        count: animal.count,
-        categoryId: category.cat_id,
-        categoryName: category.cat_name,
-        mainCategoryId: mainCategory.mcat_id,
-        mainCategoryName: mainCategory.name,
-        restrictionId: 0,
-        age: age as LivestockAnswer["age"],
-        sex,
-      });
+  id: answerId++,
+  count: animal.count,
+  categoryId: category.cat_id,
+  sourceCategoryId: animal.categoryId,   // ← အသစ်
+  categoryName: category.cat_name,
+  mainCategoryId: mainCategory.mcat_id,
+  mainCategoryName: mainCategory.name,
+  restrictionId: 0,
+  age: age as LivestockAnswer["age"],
+  sex,
+});
     }
   }
 
