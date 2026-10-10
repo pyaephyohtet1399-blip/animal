@@ -16,7 +16,7 @@ export interface InterviewColumn {
  * list drives the table header, the cells and the detail panel.
  */
 export const INTERVIEW_COLUMNS: InterviewColumn[] = [
-  { column: "h_name", label: "ဖြေဆိုသူ / အိမ်ထောင်စုအမည်", emphasize: true },
+  { column: "h_name", label: "ဖြေဆိုသူ ", emphasize: true },
   { column: "h_edu", label: "ပညာရေးအဆင့်" },
   { column: "h_gender", label: "ကျား/မ" },
   { column: "h_phone", label: "ဖုန်းနံပါတ်", mono: true },

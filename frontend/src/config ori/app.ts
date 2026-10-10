@@ -1,11 +1,11 @@
 /** Application level constants. Single source of truth for branding and scope. */
 
 export const APP_NAME = "မွေးမြူရေးအင်းဆက်နှင့် တိရစ္ဆာန်စာရင်းကောက်ယူရေး စီမံခန့်ခွဲမှုစနစ်";
-export const APP_SHORT_NAME = "မွေးမြူရေးစာရင်းကောက်ယူမှုစနစ်";
+export const APP_SHORT_NAME = "တိရစ္ဆာန်ကောင်ရေစာရင်းကောက်ယူမှုစနစ်";//တိရစ္ဆာန်ကောင်ရေကောက်ယူရေး စီမံခန့်ခွဲမှုစနစ်
 
-export const DISTRICT_NAME = "Meiktila District";
+export const DISTRICT_NAME = "မိတ္ထီလာခရိုင်";
 export const DISTRICT_NAME_MM = "မိတ္ထီလာခရိုင်";
-export const COUNTRY_NAME = "မြန်မာနိုင်ငံ";
+export const COUNTRY_NAME = "တိရစ္ဆာန်ကောင်ရေစာရင်း";
 
 /** Phase 01 ships mock data only; no backend is connected yet. */
 export const DATA_SOURCE_LABEL = "စမ်းသပ်အချက်အလက်များ (Mock data - JSON)";

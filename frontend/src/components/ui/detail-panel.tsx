@@ -149,9 +149,7 @@ export function DetailPanel({
             <h2 id={titleId} className="truncate text-base font-semibold tracking-tight">
               {title}
             </h2>
-            {description ? (
-              <p className="mt-0.5 text-sm text-muted-foreground">{description}</p>
-            ) : null}
+            
           </div>
 
           <Button variant="ghost" size="icon" onClick={onClose} aria-label="Close panel">
@@ -159,7 +157,9 @@ export function DetailPanel({
           </Button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}
+          
+        </div>
       </div>
     </div>
   );

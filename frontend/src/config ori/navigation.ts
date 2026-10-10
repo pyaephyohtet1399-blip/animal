@@ -29,7 +29,7 @@ export interface NavigationSection {
 
 export const navigationSections: NavigationSection[] = [
   {
-    title: "အထွေထွေသုံးသပ်ချက်",
+    title: "",
     items: [
       {
         label: "ပင်မဒက်ရှ်ဘုတ်",
@@ -41,7 +41,7 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
-    title: "သန်းခေါင်စာရင်း",
+    title: "",
     items: [
       {
         label: "သန်းခေါင်စာရင်း မှတ်တမ်းများ",
@@ -53,7 +53,7 @@ export const navigationSections: NavigationSection[] = [
     ],
   },
   {
-    title: "ဆန်းစစ်ချက်များ",
+    title: "",
     items: [
       {
         label: "စစ်တမ်းကောက်ယူမှု အကျဉ်းချုပ်",

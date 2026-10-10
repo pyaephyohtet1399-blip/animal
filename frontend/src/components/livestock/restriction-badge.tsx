@@ -22,9 +22,6 @@ export interface RestrictionBadgeProps {
 export function RestrictionBadge({ code, label }: RestrictionBadgeProps) {
   return (
     <span className="flex flex-wrap items-baseline gap-x-1.5">
-      <span className="rounded-md border border-border bg-muted/60 px-1.5 py-0.5 font-mono text-xs">
-        {code}
-      </span>
       {label ? <span className="text-xs text-muted-foreground">{label}</span> : null}
     </span>
   );

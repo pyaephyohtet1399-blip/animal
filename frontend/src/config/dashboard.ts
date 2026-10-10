@@ -1,12 +1,11 @@
 export const DASHBOARD_COPY = {
-  title: "Dashboard",
+  title: "Main Dashboard",
   titleMm: "ပင်မဒက်ရှ်ဘုတ်",
-  description:
-    "ခရိုင်တစ်ဝန်းရှိ စာရင်းကောက်ယူမှု စုစုပေါင်းနှင့် မွေးမြူရေးတိရစ္ဆာန် ဖြန့်ဝေမှု အခြေအနေများ။ စာမျက်နှာဖွင့်လိုက်သည်နှင့် ဂဏန်းအချက်အလက် အားလုံးကို စာရင်းဇယားများမှ အလိုအလျောက် တွက်ချက်ပြသပေးပါသည်။",
+  description: "",
 
   cards: {
     townships: { label: "Total Townships", labelMm: "မြို့နယ်စုစုပေါင်း" },
-    tracts: { label: "Total Village Tracts", labelMm: "ကျေးရွာအုပ်စုစုပေါင်း" },
+    tracts: { label: "Total Village Tracts", labelMm: "မြို့/ကျေးရွာအုပ်စုပေါင်း" },
     villages: { label: "Total Villages", labelMm: "ကျေးရွာစုစုပေါင်း" },
     interviews: { label: "Total Interview Records", labelMm: "မေးမြန်းမှု မှတ်တမ်းစုစုပေါင်း" },
     livestock: { label: "Total Livestock", labelMm: "တိရစ္ဆာန်ကောင်ရေ စုစုပေါင်း" },
@@ -28,7 +27,7 @@ export const DASHBOARD_COPY = {
     livestockByCategory: {
       title: "Livestock by Category",
       titleMm: "အမျိုးအစားအလိုက် တိရစ္ဆာန်ကောင်ရေ",
-      description: "အနည်းဆုံး စာရင်းသွင်းထားသော ကောင်ရေ တစ်ခုပါရှိသည့် တိရစ္ဆာန်အမျိုးအစား အားလုံး။",
+      description: "",
       totalLabel: "စုစုပေါင်း",
     },
     livestockBySex: {

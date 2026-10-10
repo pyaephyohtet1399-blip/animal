@@ -38,11 +38,7 @@ export function NavList({ variant }: NavListProps) {
     >
       {navigationSections.map((section) => (
         <div key={section.title} className={cn(isSidebar && "flex flex-col gap-1")}>
-          {isSidebar ? (
-            <p className="px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-              {section.title}
-            </p>
-          ) : null}
+          
 
           <ul className={cn(isSidebar ? "flex flex-col gap-0.5" : "flex items-center gap-1")}>
             {section.items.map((item) => {

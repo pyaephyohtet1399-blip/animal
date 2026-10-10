@@ -1,5 +1,4 @@
-import { Sprout } from "lucide-react";
-
+import Image from "next/image";
 import { APP_SHORT_NAME, DISTRICT_NAME_MM } from "@/config ori/app";
 import { cn } from "@/lib/cn";
 
@@ -9,22 +8,33 @@ export interface BrandProps {
   className?: string;
 }
 
-/** Single brand block, reused by the sidebar and the compact top bar. */
+/** Shared brand component for the sidebar and compact top bar. */
 export function Brand({ compact = false, className }: BrandProps) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <span className="flex size-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-        <Sprout className="size-5" aria-hidden />
-      </span>
+    <div className={cn("flex min-w-0 items-center gap-3", className)}>
+      {/* Logo */}
+      <div className="relative flex size-13 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-emerald-100 bg-white shadow-sm shadow-emerald-900/10">
+        <Image
+          src="/images/animal_logo.png"
+          alt="Animal Collection Management System Logo"
+          width={80}
+          height={80}
+          priority
+          className="h-full w-full object-contain"
+        />
+      </div>
+
+      {/* Brand name */}
       {compact ? null : (
-        <span className="flex min-w-0 flex-col">
-          <span className="truncate text-sm font-semibold tracking-tight">
+        <div className="flex min-w-0 flex-col justify-center gap-0.5">
+          <span className="truncate text-sm font-bold leading-5 tracking-tight text-foreground">
             {APP_SHORT_NAME}
           </span>
-          <span className="truncate text-xs text-muted-foreground">
+
+          <span className="truncate text-xs leading-4 text-muted-foreground">
             {DISTRICT_NAME_MM}
           </span>
-        </span>
+        </div>
       )}
     </div>
   );

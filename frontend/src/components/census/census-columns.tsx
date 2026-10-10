@@ -30,9 +30,7 @@ export function buildCensusColumns({
       render: (row) => (
         <span className="flex flex-col">
           <span className="font-medium">{row.interview.h_name}</span>
-          <span className="font-mono text-xs text-muted-foreground">
-            p_Id {row.interview.p_Id}
-          </span>
+         
         </span>
       ),
     },
@@ -57,7 +55,7 @@ export function buildCensusColumns({
           <span className="flex flex-col">
             <span>{row.village.name}</span>
             <span className="font-mono text-xs text-muted-foreground">
-              {row.village.code}
+              
             </span>
           </span>
         ) : (

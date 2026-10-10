@@ -35,7 +35,7 @@ export function Topbar() {
       <div className="flex h-14 items-center justify-between gap-4 px-4 lg:px-8">
         <Brand className="lg:hidden" />
 
-        <p className="hidden text-sm text-muted-foreground lg:block">
+        <p className="hidden text-lg text-muted-foreground lg:block">
           {DISTRICT_NAME} &middot; {COUNTRY_NAME}
         </p>
 

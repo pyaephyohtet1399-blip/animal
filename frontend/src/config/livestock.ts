@@ -1,6 +1,6 @@
 export const LIVESTOCK_COPY = {
   sectionTitle: "မွေးမြူရေးစာရင်း",
-  sectionDescription: "ဤအိမ်ထောင်စု မေးမြန်းမှုတွင် စာရင်းကောက်ယူထားသော တိရစ္ဆာန်ကောင်ရေများ။",
+  sectionDescription: "",
   summaryLabel: "တိရစ္ဆာန် စုစုပေါင်း",
   summaryAnswers: "ဖြေဆိုချက် မှတ်တမ်းများ",
   summaryGroups: "တိရစ္ဆာန်အုပ်စုများ",

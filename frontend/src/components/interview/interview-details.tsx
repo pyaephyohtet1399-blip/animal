@@ -26,7 +26,7 @@ export function InterviewDetails({ interview, census }: InterviewDetailsProps) {
       label: column.label,
       value: interview[column.column],
     })),
-    { label: "Record ID (p_Id)", value: interview.p_Id },
+    { label: "မေးမြန်းသူ", value: interview.interviewer_name ?? "-" },
   ];
 
   return (
