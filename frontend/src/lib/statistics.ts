@@ -1,99 +1,58 @@
-import { buildReportBundle, EMPTY_REPORT_SCOPE } from "@/lib/reports";
-import type { CensusDataset, CensusRecord } from "@/types/census-records";
+import { buildAnswerAggregates } from "@/lib/reports";
+import { getMainCategories } from "@/lib/repositories/category";
+import { buildOverviewAnswers, type CensusOverview } from "@/lib/repositories/livestock";
+import type { Category, Township, TownVillage, WardVillage } from "@/types/census";
+import type { CensusTotals, CategoryStat } from "@/types/statistics";
 import type {
-  CategoryStat,
-  CensusTotals,
-  DashboardStatistics,
-  MainCategoryStat,
-  RecentInterview,
-  SexStat,
-} from "@/types/statistics";
+  LargeLivestockReportRow,
+  PoultryLivestockReportRow,
+  SmallLivestockReportRow,
+  LivestockSexSummaryRow,
+} from "@/lib/reports";
 
 /**
  * District-wide statistics for the dashboard.
  *
- * The census records already carry their resolved geography and livestock
- * census, and `buildReportBundle` already aggregates the whole district by
- * township, animal type and sex. This module reuses both rather than walking the
- * raw tables a second time: one place decides how `answer` joins to `category`,
- * `main_category` and `restriction`, and everything downstream reads from it.
- *
- * Only the two things the dashboard needs and the reports do not provide are
- * added here — the full main-category list (including groups with no animals)
- * and the most recently answered households. The input is the cached dataset
- * from `useGetCensusDatasetQuery`, so opening the dashboard after the reports
- * costs no extra requests.
+ * The dashboard reads the server-side overview (`GET /statistics/overview`),
+ * which pre-groups every animal row in one aggregation instead of the browser
+ * downloading every survey. Category/age/sex resolution reuses the same
+ * mapping and accumulation as the reports, so both screens agree.
  */
 
-/** How many households the dashboard lists under "recent". */
-const RECENT_INTERVIEW_LIMIT = 6;
-
-function toRecentInterview(record: CensusRecord): RecentInterview {
-  return {
-    p_Id: record.interview.p_Id,
-    h_name: record.interview.h_name,
-    ans_date: record.interview.ans_date,
-    wvCode: record.interview.wvCode,
-    villageName: record.village?.name ?? null,
-    tractName: record.tract?.name ?? null,
-    townshipName: record.township?.name ?? null,
-    livestockCount: record.livestockCount,
-  };
+export interface DashboardOverview {
+  totals: CensusTotals;
+  categories: CategoryStat[];
+  mc1Large: LargeLivestockReportRow[];
+  mc2Small: SmallLivestockReportRow[];
+  mc3Poultry: PoultryLivestockReportRow[];
+  mc4Summary: LivestockSexSummaryRow[];
 }
 
-/**
- * Animal-group totals, including groups with nothing recorded, so the dashboard
- * can state that a group exists and holds zero rather than omitting it.
- */
-function mainCategoryTotals(
-  dataset: CensusDataset,
-  categories: CategoryStat[],
-): MainCategoryStat[] {
-  const totals = new Map<string, number>();
-  for (const category of categories) {
-    totals.set(
-      category.mainCategoryId,
-      (totals.get(category.mainCategoryId) ?? 0) + category.count,
-    );
-  }
+export function buildDashboardOverview(
+  overview: CensusOverview,
+  categories: Category[],
+  townships: Township[],
+  townVillages: TownVillage[],
+  wardVillages: WardVillage[],
+): DashboardOverview {
+  const mainCategories = getMainCategories();
+  const answers = buildOverviewAnswers(overview.rows, categories, mainCategories);
 
-  return dataset.mainCategories.map((mainCategory) => ({
-    mainCategoryId: mainCategory.value,
-    mainCategoryName: mainCategory.label,
-    count: totals.get(mainCategory.value) ?? 0,
-  }));
-}
-
-/**
- * Sex totals. Only codes with animals are listed, matching the report: a code
- * with nothing behind it would be a bar of length zero.
- */
-export function buildDashboardStatistics(dataset: CensusDataset): DashboardStatistics {
-  // An empty scope, so the bundle covers the whole district.
-  const bundle = buildReportBundle(dataset, EMPTY_REPORT_SCOPE);
+  const groupOrder = new Map(mainCategories.map((mainCategory, index) => [mainCategory.mcat_id, index]));
+  const categoryOrder = new Map(categories.map((category, index) => [category.cat_id, index]));
+  const grids = buildAnswerAggregates(answers, groupOrder, categoryOrder);
 
   const totals: CensusTotals = {
-    townshipCount: dataset.townships.length,
-    townVillageCount: dataset.tracts.length,
-    wardVillageCount: dataset.villages.length,
-    interviewCount: bundle.totals.interviewCount,
-    answerCount: bundle.totals.answerCount,
-    livestockCount: bundle.totals.livestockCount,
-    householdsWithAnswers: dataset.records.filter(
-      (record) => record.answerCount > 0,
-    ).length,
+    townshipCount: townships.length,
+    townVillageCount: townVillages.length,
+    wardVillageCount: wardVillages.length,
+    interviewCount: overview.interviewCount,
+    answerCount: overview.rows.length,
+    livestockCount: overview.livestockCount,
+    householdsWithAnswers: overview.interviewCount,
   };
 
-  const recentInterviews = [...dataset.records]
-    .sort(
-      (a, b) =>
-        b.interview.ans_date.localeCompare(a.interview.ans_date) ||
-        b.interview.p_Id - a.interview.p_Id,
-    )
-    .slice(0, RECENT_INTERVIEW_LIMIT)
-    .map(toRecentInterview);
-
-  const categories: CategoryStat[] = bundle.categories.map((row) => ({
+  const categories_ = grids.categories.map<CategoryStat>((row) => ({
     categoryId: row.categoryId,
     categoryName: row.categoryName,
     mainCategoryId: row.mainCategoryId,
@@ -101,19 +60,12 @@ export function buildDashboardStatistics(dataset: CensusDataset): DashboardStati
     count: row.count,
   }));
 
-  const sexes: SexStat[] = bundle.sexes.map((row) => ({
-    code: row.code,
-    label: row.label,
-    count: row.count,
-  }));
-
   return {
     totals,
-    townships: bundle.townships,
-    mainCategories: mainCategoryTotals(dataset, categories),
-    categories,
-    sexes,
-    recentInterviews,
-    records: dataset.records,
+    categories: categories_,
+    mc1Large: grids.mc1Large,
+    mc2Small: grids.mc2Small,
+    mc3Poultry: grids.mc3Poultry,
+    mc4Summary: grids.mc4Summary,
   };
 }

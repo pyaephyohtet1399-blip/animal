@@ -9,7 +9,7 @@
  */
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useGetCensusDatasetQuery } from "@/services/api/censusApi";
 import { ChartCard } from "@/components/charts/chart-card";
@@ -24,7 +24,6 @@ import {
 } from "@/components/reports/report-livestock-by-group";
 import { TractReport, VillageReport } from "@/components/reports/report-tables";
 import { PageHeader } from "@/components/shared/page-header";
-import { PrintButton } from "@/components/shared/print-button";
 import { StatePanel } from "@/components/shared/state-panel";
 import { StatCard } from "@/components/shared/stat-card";
 import { REPORT_COPY } from "@/config/reports";
@@ -54,32 +53,6 @@ export function ReportsContent() {
     if (!dataset) return null;
     return buildReportBundle(dataset, parseReportScope(searchParamsRecord));
   }, [dataset, searchParamsRecord]);
-
-  useEffect(() => {
-    if (!bundle?.records?.[0]) {
-      console.log("🔴 bundle.records မရှိ:", bundle);
-      return;
-    }
-
-    const r = bundle.records[0];
-    console.log("═══════════ DEBUG START ═══════════");
-    console.log("📋 Interview:", r.interview);
-    console.log("📦 Census object:", r.census);
-    console.log("📊 Groups count:", r.census?.groups?.length ?? 0);
-    console.log("🔢 Total count:", r.census?.totalCount ?? 0);
-    console.log("📝 Answer count:", r.census?.answerCount ?? 0);
-
-    r.census?.groups?.forEach((g, gi) => {
-      console.log(`\n[Group ${gi}] ${g.mainCategoryId} - ${g.mainCategoryName}`);
-      g.answers.forEach((a, ai) => {
-        console.log(
-          `  [${ai}] name="${a.categoryName}" catId="${a.categoryId}" ` +
-          `age=${a.age} sex=${a.sex} count=${a.count}`
-        );
-      });
-    });
-    console.log("═══════════ DEBUG END ═══════════");
-  }, [bundle]);
 
   if (errorMessage) {
     return (
@@ -115,12 +88,10 @@ export function ReportsContent() {
         title={REPORT_COPY.title}
         subtitle={REPORT_COPY.titleMm}
         description={REPORT_COPY.description}
-actions={
+        actions={
           <>
-            <PrintButton />
             <ExcelExportButton
               dataset={dataset}
-              scope={bundle?.scope || null}
               label="Excel ထုတ်ယူရန်"
             />
           </>

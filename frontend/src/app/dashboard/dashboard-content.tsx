@@ -12,21 +12,36 @@ import {
   Mc4Report,
 } from "@/components/reports/report-livestock-by-group";
 import { PageHeader } from "@/components/shared/page-header";
-import { DASHBOARD_COPY } from "@/config ori/dashboard";
-import { EMPTY_REPORT_SCOPE, buildReportBundle } from "@/lib/reports";
-import { buildDashboardStatistics } from "@/lib/statistics";
+import { DASHBOARD_COPY } from "@/config/dashboard";
+import { buildDashboardOverview } from "@/lib/statistics";
 import { apiErrorMessage } from "@/services/api/api-error";
-import { useGetCensusDatasetQuery } from "@/services/api/censusApi";
+import {
+  useGetCategoriesQuery,
+  useGetOverviewQuery,
+  useGetTownVillagesQuery,
+  useGetTownshipsQuery,
+  useGetWardVillagesQuery,
+} from "@/services/api/censusApi";
 
 export function DashboardContent() {
-  const { data: dataset, error, isError } = useGetCensusDatasetQuery();
+  const { data: overview, error, isError } = useGetOverviewQuery();
+  const { data: townships } = useGetTownshipsQuery();
+  const { data: townVillages } = useGetTownVillagesQuery();
+  const { data: wardVillages } = useGetWardVillagesQuery();
+  const { data: categories } = useGetCategoriesQuery();
+
   const stats = useMemo(
-    () => (dataset ? buildDashboardStatistics(dataset) : null),
-    [dataset],
-  );
-  const bundle = useMemo(
-    () => (dataset ? buildReportBundle(dataset, EMPTY_REPORT_SCOPE) : null),
-    [dataset],
+    () =>
+      overview && townships && townVillages && wardVillages && categories
+        ? buildDashboardOverview(
+            overview,
+            categories,
+            townships,
+            townVillages,
+            wardVillages,
+          )
+        : null,
+    [overview, townships, townVillages, wardVillages, categories],
   );
   const errorMessage = isError ? apiErrorMessage(error) : null;
 
@@ -89,18 +104,10 @@ export function DashboardContent() {
         />
       </ChartCard>
 
-      {bundle && bundle.mc1Large.length > 0 ? (
-        <Mc1Report rows={bundle.mc1Large} />
-      ) : null}
-      {bundle && bundle.mc2Small.length > 0 ? (
-        <Mc2Report rows={bundle.mc2Small} />
-      ) : null}
-      {bundle && bundle.mc3Poultry.length > 0 ? (
-        <Mc3Report rows={bundle.mc3Poultry} />
-      ) : null}
-      {bundle && bundle.mc4Summary.length > 0 ? (
-        <Mc4Report rows={bundle.mc4Summary} />
-      ) : null}
+      {stats.mc1Large.length > 0 ? <Mc1Report rows={stats.mc1Large} /> : null}
+      {stats.mc2Small.length > 0 ? <Mc2Report rows={stats.mc2Small} /> : null}
+      {stats.mc3Poultry.length > 0 ? <Mc3Report rows={stats.mc3Poultry} /> : null}
+      {stats.mc4Summary.length > 0 ? <Mc4Report rows={stats.mc4Summary} /> : null}
     </div>
   );
 }

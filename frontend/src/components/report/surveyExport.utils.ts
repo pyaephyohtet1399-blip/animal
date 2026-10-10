@@ -1,5 +1,6 @@
 import * as XLSX from "xlsx";
 import { WDN_COLUMNS } from "@/config/wdn-columns";
+import { buildWdnHeader } from "@/config/wdn-header";
 import {
   AGE_SUFFIX,
   SEX_SUFFIX,
@@ -7,7 +8,8 @@ import {
 } from "@/config/wdn-livestock-map";
 import type { CensusDataset, CensusRecord } from "@/types/census-records";
 import type { LivestockCensus } from "@/types/livestock";
-import type { ReportScope } from "@/lib/reports";
+
+const WDN_KEYS = new Set(WDN_COLUMNS.map((c) => c.key));
 
 // ─────────────────────────────────────────────
 // 1. Flatten one CensusRecord → flat object
@@ -32,8 +34,8 @@ function flattenRecord(record: CensusRecord): Record<string, unknown> {
     age1: interview?.h_age ?? "",
     education1: interview?.h_edu ?? "",
     phone1: interview?.h_phone ?? "",
-    interviewerName: "",
-    phone2: "",
+    interviewerName: interview?.interviewer_name ?? "",
+    phone2: interview?.interviewer_phone ?? "",
   };
 
   Object.assign(flat, flattenLivestock(census));
@@ -45,11 +47,18 @@ function flattenRecord(record: CensusRecord): Record<string, unknown> {
 // ─────────────────────────────────────────────
 function flattenLivestock(census: LivestockCensus | undefined): Record<string, number> {
   const result: Record<string, number> = {};
+  const totals: Record<string, number> = {};
 
   for (const col of WDN_COLUMNS) {
     if (isAnimalColumn(col.key)) result[col.key] = 0;
   }
   if (!census) return result;
+
+  const add = (baseKey: string, flatKey: string, count: number) => {
+    result[flatKey] = (result[flatKey] ?? 0) + count;
+    const totalKey = `${baseKey}Total`;
+    if (WDN_KEYS.has(totalKey)) totals[totalKey] = (totals[totalKey] ?? 0) + count;
+  };
 
   for (const group of census.groups) {
     const keyMap = getMainCategoryKeyMap(group.mainCategoryId);
@@ -66,7 +75,7 @@ function flattenLivestock(census: LivestockCensus | undefined): Record<string, n
         const sexSuffix = SEX_SUFFIX[answer.sex];
         if (!sexSuffix) continue;
         const flatKey = `${baseKey}${sexSuffix}`;
-        result[flatKey] = (result[flatKey] ?? 0) + answer.count;
+        add(baseKey, flatKey, answer.count);
         continue;
       }
 
@@ -75,9 +84,11 @@ function flattenLivestock(census: LivestockCensus | undefined): Record<string, n
       if (!ageSuffix || !sexSuffix) continue;
 
       const flatKey = `${baseKey}${ageSuffix}${sexSuffix}`;
-      result[flatKey] = (result[flatKey] ?? 0) + answer.count;
+      add(baseKey, flatKey, answer.count);
     }
   }
+
+  Object.assign(result, totals);
   return result;
 }
 
@@ -106,96 +117,59 @@ function isAnimalColumn(key: string): boolean {
 }
 
 // ─────────────────────────────────────────────
-// 3. Scope filtering
+// 3. Workbook building
 // ─────────────────────────────────────────────
-function extractScopeValues(scope: ReportScope | null) {
-  if (!scope) return {};
-  const s = scope as Record<string, unknown>;
-  const pick = (...keys: string[]): string | undefined => {
-    for (const k of keys) {
-      const v = s[k];
-      if (typeof v === "string" && v.trim()) return v;
-      if (v && typeof v === "object" && "code" in v) {
-        const c = (v as { code?: unknown }).code;
-        if (typeof c === "string") return c;
-      }
-    }
-    return undefined;
-  };
-  return {
-    district: pick("district", "districtCode"),
-    township: pick("township", "townshipCode"),
-    villageTract: pick("villageTract", "tract", "tractCode"),
-    villageWard: pick("villageWard", "village", "villageCode"),
-  };
+function buildSheetAoa(records: CensusRecord[]): (string | number | null)[][] {
+  const header = buildWdnHeader();
+  const headerKeys = WDN_COLUMNS.map((c) => c.key);
+  return [
+    header.rows[0],
+    header.rows[1],
+    header.rows[2],
+    ...records.map((record) => {
+      const row = flattenRecord(record);
+      return headerKeys.map((k) => (row[k] as string | number | null) ?? "");
+    }),
+  ];
 }
 
-function applyScope(
+function appendSheet(
+  wb: XLSX.WorkBook,
+  sheetName: string,
   records: CensusRecord[],
-  scope: ReportScope | null,
-): CensusRecord[] {
-  const f = extractScopeValues(scope);
-  if (!Object.values(f).some(Boolean)) return records;
-
-  return records.filter((r) => {
-    const flat = flattenRecord(r);
-    if (f.district && flat.district !== f.district) return false;
-    if (f.township && flat.township !== f.township) return false;
-    if (f.villageTract && flat.villageTract !== f.villageTract) return false;
-    if (f.villageWard && flat.villageWard !== f.villageWard) return false;
-    return true;
-  });
+): void {
+  const header = buildWdnHeader();
+  const aoa = buildSheetAoa(records);
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws["!cols"] = WDN_COLUMNS.map((c) => ({ wch: c.width ?? 15 }));
+  ws["!freeze"] = { xSplit: 0, ySplit: 3 };
+  ws["!merges"] = header.merges;
+  ws["!autofilter"] = {
+    ref: XLSX.utils.encode_range({
+      s: { r: 2, c: 0 },
+      e: { r: aoa.length - 1, c: WDN_COLUMNS.length - 1 },
+    }),
+  };
+  XLSX.utils.book_append_sheet(wb, ws, sheetName);
 }
 
 // ─────────────────────────────────────────────
 // 4. Public API
 // ─────────────────────────────────────────────
-export function canExport(
-  dataset: CensusDataset | null,
-  scope: ReportScope | null,
-): boolean {
-  if (!dataset?.records?.length) return false;
-  return applyScope(dataset.records, scope).length > 0;
+export function canExport(dataset: CensusDataset | null): boolean {
+  return Boolean(dataset?.records?.length);
 }
 
-export function exportToExcel(
-  dataset: CensusDataset | null,
-  scope: ReportScope | null,
-): void {
-  if (!dataset) throw new Error("Dataset is empty");
-  const filtered = applyScope(dataset.records, scope);
-  if (filtered.length === 0)
-    throw new Error("No records match the current filters");
-
-  const rows = filtered.map(flattenRecord);
-
-  const headerKeys = WDN_COLUMNS.map((c) => c.key);
-  const headerLabels = WDN_COLUMNS.map((c) => c.labelMm);
-
-  const aoa: (string | number | null)[][] = [
-    headerLabels,
-    ...rows.map((row) =>
-      headerKeys.map((k) => (row[k] as string | number | null) ?? ""),
-    ),
-  ];
-
-  const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws["!cols"] = WDN_COLUMNS.map((c) => ({ wch: c.width ?? 15 }));
-  ws["!freeze"] = { xSplit: 0, ySplit: 1 };
-  if (ws["!ref"]) ws["!autofilter"] = { ref: ws["!ref"] };
+/**
+ * Exports every record the officer can see in one sheet (report filters are
+ * ignored on purpose — the user filters inside Excel via the autofilter).
+ */
+export function exportToExcel(dataset: CensusDataset | null): void {
+  if (!dataset?.records?.length) throw new Error("Dataset is empty");
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "WDN Survey");
+  appendSheet(wb, "WDN Survey", dataset.records);
 
   const stamp = new Date().toISOString().slice(0, 10);
-  const tag = buildScopeTag(scope);
-  XLSX.writeFile(wb, `WDN_Survey_${tag}_${stamp}.xlsx`);
-}
-
-function buildScopeTag(scope: ReportScope | null): string {
-  const f = extractScopeValues(scope);
-  const parts = [f.district, f.township, f.villageTract, f.villageWard].filter(
-    (v): v is string => Boolean(v),
-  );
-  return parts.length ? parts.join("-") : "All";
+  XLSX.writeFile(wb, `WDN_Survey_All_${stamp}.xlsx`);
 }

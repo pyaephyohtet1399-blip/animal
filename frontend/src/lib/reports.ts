@@ -453,6 +453,103 @@ function ensureSexSummaryRow(
   return created;
 }
 
+/** Shared answer accumulation used by the record bundle and the dashboard. */
+interface AnswerTally {
+  categoryTotals: Map<string, LivestockCategoryReportRow>;
+  sexTotals: Map<SexCode, number>;
+  livestockSexSummaryRows: Map<string, LivestockSexSummaryRow>;
+  largeLivestockRows: Map<string, LargeLivestockReportRow>;
+  smallLivestockRows: Map<string, SmallLivestockReportRow>;
+  poultryLivestockRows: Map<string, PoultryLivestockReportRow>;
+  mc1LargeRows: Map<string, LargeLivestockReportRow>;
+  mc2SmallRows: Map<string, SmallLivestockReportRow>;
+  mc3PoultryRows: Map<string, PoultryLivestockReportRow>;
+  mc4SummaryRows: Map<string, LivestockSexSummaryRow>;
+}
+
+function emptyAnswerTally(): AnswerTally {
+  return {
+    categoryTotals: new Map(),
+    sexTotals: new Map(),
+    livestockSexSummaryRows: new Map(),
+    largeLivestockRows: new Map(),
+    smallLivestockRows: new Map(),
+    poultryLivestockRows: new Map(),
+    mc1LargeRows: new Map(),
+    mc2SmallRows: new Map(),
+    mc3PoultryRows: new Map(),
+    mc4SummaryRows: new Map(),
+  };
+}
+
+function tallyAnswer(tally: AnswerTally, answer: LivestockAnswer): void {
+  const sexField = sexSplitField(answer.sex);
+
+  const existingCategory = tally.categoryTotals.get(answer.categoryId);
+  if (existingCategory) {
+    existingCategory.count += answer.count;
+    existingCategory[sexField] += answer.count;
+  } else {
+    const created: LivestockCategoryReportRow = {
+      ...livestockIdentity(answer),
+      count: answer.count,
+      male: 0,
+      castratedMale: 0,
+      female: 0,
+    };
+    created[sexField] += answer.count;
+    tally.categoryTotals.set(answer.categoryId, created);
+  }
+
+  tally.sexTotals.set(answer.sex, (tally.sexTotals.get(answer.sex) ?? 0) + answer.count);
+
+  // The four livestock grids all read the same stored answer.
+  const summary = ensureSexSummaryRow(tally.livestockSexSummaryRows, answer);
+  summary[sexField] += answer.count;
+  summary.total += answer.count;
+
+  const yearClass = yearAgeClass(answer.age);
+  if (yearClass) {
+    const large = ensureLargeRow(tally.largeLivestockRows, answer);
+    large.ageGroups[yearClass][sexField] += answer.count;
+    large.total += answer.count;
+  }
+
+  const monthClass = monthAgeClass(answer.age);
+  if (monthClass) {
+    const small = ensureSmallRow(tally.smallLivestockRows, answer);
+    small.ageGroups[monthClass][sexField] += answer.count;
+    small.total += answer.count;
+  }
+
+  const size = sizeClass(answer.age);
+  if (size) {
+    const bird = ensurePoultryRow(tally.poultryLivestockRows, answer);
+    bird.sizeGroups[size][sexField] += answer.count;
+    bird.total += answer.count;
+  }
+
+  // Per-animal-group grids for the four MC sections.
+  const mainCategoryId = answer.mainCategoryId;
+  if (mainCategoryId === "MC1" && yearClass) {
+    const row = ensureLargeRow(tally.mc1LargeRows, answer);
+    row.ageGroups[yearClass][sexField] += answer.count;
+    row.total += answer.count;
+  } else if (mainCategoryId === "MC2" && monthClass) {
+    const row = ensureSmallRow(tally.mc2SmallRows, answer);
+    row.ageGroups[monthClass][sexField] += answer.count;
+    row.total += answer.count;
+  } else if (mainCategoryId === "MC3" && size) {
+    const row = ensurePoultryRow(tally.mc3PoultryRows, answer);
+    row.sizeGroups[size][sexField] += answer.count;
+    row.total += answer.count;
+  } else if (mainCategoryId === "MC4") {
+    const row = ensureSexSummaryRow(tally.mc4SummaryRows, answer);
+    row[sexField] += answer.count;
+    row.total += answer.count;
+  }
+}
+
 function byCountDesc<T extends { count: number; name: string }>(items: T[]): T[] {
   return [...items].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
@@ -591,18 +688,7 @@ export function buildReportBundle(
   const villageCounters = new Map<string, Counters>();
 
   const mainCategoryTotals = new Map<string, CategoryBreakdownItem>();
-  const categoryTotals = new Map<string, LivestockCategoryReportRow>();
-  const sexTotals = new Map<SexCode, number>();
-
-  const largeLivestockRows = new Map<string, LargeLivestockReportRow>();
-  const smallLivestockRows = new Map<string, SmallLivestockReportRow>();
-  const poultryLivestockRows = new Map<string, PoultryLivestockReportRow>();
-  const livestockSexSummaryRows = new Map<string, LivestockSexSummaryRow>();
-
-  const mc1LargeRows = new Map<string, LargeLivestockReportRow>();
-  const mc2SmallRows = new Map<string, SmallLivestockReportRow>();
-  const mc3PoultryRows = new Map<string, PoultryLivestockReportRow>();
-  const mc4SummaryRows = new Map<string, LivestockSexSummaryRow>();
+  const answerTally = emptyAnswerTally();
 
   for (const record of records) {
     if (record.township) {
@@ -639,71 +725,7 @@ export function buildReportBundle(
       }
 
       for (const answer of group.answers) {
-        const sexField = sexSplitField(answer.sex);
-
-        const existingCategory = categoryTotals.get(answer.categoryId);
-        if (existingCategory) {
-          existingCategory.count += answer.count;
-          existingCategory[sexField] += answer.count;
-        } else {
-          const created: LivestockCategoryReportRow = {
-            ...livestockIdentity(answer),
-            count: answer.count,
-            male: 0,
-            castratedMale: 0,
-            female: 0,
-          };
-          created[sexField] += answer.count;
-          categoryTotals.set(answer.categoryId, created);
-        }
-
-        sexTotals.set(answer.sex, (sexTotals.get(answer.sex) ?? 0) + answer.count);
-
-        // The four livestock grids all read the same stored answer.
-        const summary = ensureSexSummaryRow(livestockSexSummaryRows, answer);
-        summary[sexField] += answer.count;
-        summary.total += answer.count;
-
-        const yearClass = yearAgeClass(answer.age);
-        if (yearClass) {
-          const large = ensureLargeRow(largeLivestockRows, answer);
-          large.ageGroups[yearClass][sexField] += answer.count;
-          large.total += answer.count;
-        }
-
-        const monthClass = monthAgeClass(answer.age);
-        if (monthClass) {
-          const small = ensureSmallRow(smallLivestockRows, answer);
-          small.ageGroups[monthClass][sexField] += answer.count;
-          small.total += answer.count;
-        }
-
-        const size = sizeClass(answer.age);
-        if (size) {
-          const bird = ensurePoultryRow(poultryLivestockRows, answer);
-          bird.sizeGroups[size][sexField] += answer.count;
-          bird.total += answer.count;
-        }
-
-        // Per-animal-group grids for the four MC sections.
-        const mainCategoryId = answer.mainCategoryId;
-        if (mainCategoryId === "MC1" && yearClass) {
-          const row = ensureLargeRow(mc1LargeRows, answer);
-          row.ageGroups[yearClass][sexField] += answer.count;
-          row.total += answer.count;
-        } else if (mainCategoryId === "MC2" && monthClass) {
-          const row = ensureSmallRow(mc2SmallRows, answer);
-          row.ageGroups[monthClass][sexField] += answer.count;
-          row.total += answer.count;
-        } else if (mainCategoryId === "MC3" && size) {
-          const row = ensurePoultryRow(mc3PoultryRows, answer);
-          row.sizeGroups[size][sexField] += answer.count;
-          row.total += answer.count;
-        } else if (mainCategoryId === "MC4") {
-          const row = ensureSexSummaryRow(mc4SummaryRows, answer);
-          row[sexField] += answer.count;
-          row.total += answer.count;
-        }
+        tallyAnswer(answerTally, answer);
       }
     }
   }
@@ -779,11 +801,11 @@ export function buildReportBundle(
     };
   });
 
-  const categories = [...categoryTotals.values()].sort(
+  const categories = [...answerTally.categoryTotals.values()].sort(
     (a, b) => b.count - a.count || a.categoryName.localeCompare(b.categoryName),
   );
 
-  const sexes: SexReportRow[] = [...sexTotals.entries()]
+  const sexes: SexReportRow[] = [...answerTally.sexTotals.entries()]
     .map(([code, count]) => ({ code, label: getSexCodeLabel(code), count }))
     .sort((a, b) => b.count - a.count || a.code.localeCompare(b.code));
 
@@ -809,14 +831,14 @@ export function buildReportBundle(
     villages: sortByMeasure(villages, "livestockCount", "villageName"),
     categories,
     sexes,
-    largeLivestock: inTaxonomyOrder([...largeLivestockRows.values()]),
-    smallLivestock: inTaxonomyOrder([...smallLivestockRows.values()]),
-    poultryLivestock: inTaxonomyOrder([...poultryLivestockRows.values()]),
-    livestockSexSummary: inTaxonomyOrder([...livestockSexSummaryRows.values()]),
-    mc1Large: inTaxonomyOrder([...mc1LargeRows.values()]),
-    mc2Small: inTaxonomyOrder([...mc2SmallRows.values()]),
-    mc3Poultry: inTaxonomyOrder([...mc3PoultryRows.values()]),
-    mc4Summary: inTaxonomyOrder([...mc4SummaryRows.values()]),
+    largeLivestock: inTaxonomyOrder([...answerTally.largeLivestockRows.values()]),
+    smallLivestock: inTaxonomyOrder([...answerTally.smallLivestockRows.values()]),
+    poultryLivestock: inTaxonomyOrder([...answerTally.poultryLivestockRows.values()]),
+    livestockSexSummary: inTaxonomyOrder([...answerTally.livestockSexSummaryRows.values()]),
+    mc1Large: inTaxonomyOrder([...answerTally.mc1LargeRows.values()]),
+    mc2Small: inTaxonomyOrder([...answerTally.mc2SmallRows.values()]),
+    mc3Poultry: inTaxonomyOrder([...answerTally.mc3PoultryRows.values()]),
+    mc4Summary: inTaxonomyOrder([...answerTally.mc4SummaryRows.values()]),
   };
 }
 
@@ -833,10 +855,10 @@ function sortByMeasure<T, K extends keyof T>(rows: T[], measure: K, name: K): T[
  * Animal groups in `main_category` order, then animal types in `category` order,
  * so a livestock grid reads like the form it came from.
  */
-function byTaxonomyOrder(dataset: CensusDataset) {
-  const groupOrder = new Map(dataset.mainCategories.map((option, index) => [option.value, index]));
-  const categoryOrder = new Map(dataset.categories.map((option, index) => [option.value, index]));
-
+function taxonomySorter(
+  groupOrder: Map<string, number>,
+  categoryOrder: Map<string, number>,
+) {
   const rank = (order: Map<string, number>, key: string): number =>
     order.get(key) ?? Number.MAX_SAFE_INTEGER;
 
@@ -849,6 +871,49 @@ function byTaxonomyOrder(dataset: CensusDataset) {
       const byCategory = rank(categoryOrder, a.categoryId) - rank(categoryOrder, b.categoryId);
       return byCategory !== 0 ? byCategory : a.categoryName.localeCompare(b.categoryName);
     });
+}
+
+function byTaxonomyOrder(dataset: CensusDataset) {
+  return taxonomySorter(
+    new Map(dataset.mainCategories.map((option, index) => [option.value, index])),
+    new Map(dataset.categories.map((option, index) => [option.value, index])),
+  );
+}
+
+export interface AnswerAggregates {
+  categories: LivestockCategoryReportRow[];
+  mc1Large: LargeLivestockReportRow[];
+  mc2Small: SmallLivestockReportRow[];
+  mc3Poultry: PoultryLivestockReportRow[];
+  mc4Summary: LivestockSexSummaryRow[];
+}
+
+/**
+ * The category grids from a flat list of already-resolved answers — the
+ * dashboard feeds it server-aggregated rows through the same accumulation the
+ * report bundle uses, so both screens always agree on the numbers.
+ */
+export function buildAnswerAggregates(
+  answers: LivestockAnswer[],
+  groupOrder: Map<string, number>,
+  categoryOrder: Map<string, number>,
+): AnswerAggregates {
+  const tally = emptyAnswerTally();
+  for (const answer of answers) {
+    tallyAnswer(tally, answer);
+  }
+
+  const inTaxonomyOrder = taxonomySorter(groupOrder, categoryOrder);
+
+  return {
+    categories: [...tally.categoryTotals.values()].sort(
+      (a, b) => b.count - a.count || a.categoryName.localeCompare(b.categoryName),
+    ),
+    mc1Large: inTaxonomyOrder([...tally.mc1LargeRows.values()]),
+    mc2Small: inTaxonomyOrder([...tally.mc2SmallRows.values()]),
+    mc3Poultry: inTaxonomyOrder([...tally.mc3PoultryRows.values()]),
+    mc4Summary: inTaxonomyOrder([...tally.mc4SummaryRows.values()]),
+  };
 }
 
 function townshipNameOfVillage(dataset: CensusDataset, villageCode: string): string {

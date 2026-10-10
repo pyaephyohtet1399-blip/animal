@@ -44,6 +44,8 @@ const surveySchema = new mongoose.Schema(
     wvCode: { type: String, required: true, index: true },
     syncVersion: { type: Number, default: 0 },
     deletedAt: { type: Date, default: null, index: true },
+    interviewerName: { type: String, trim: true },
+    interviewerPhone: { type: String, trim: true },
     bigAnimals: [bigAnimalSchema],
     smallAnimals: [smallAnimalSchema],
     poultry: [poultrySchema],

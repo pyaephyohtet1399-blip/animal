@@ -96,7 +96,7 @@ describe('GET /api/v1/locations endpoints', () => {
     expect(res.body.data[0].districtCode).toBe('MMR0100');
     expect(res.body.data[0]).not.toHaveProperty('_id');
     expect(res.headers['cache-control']).toBe('no-store');
-    expect(res.headers['x-ratelimit-limit']).toBe('100');
+    expect(res.headers['x-ratelimit-limit']).toBe('1000');
   });
 
   test('township sees only its own township', async () => {

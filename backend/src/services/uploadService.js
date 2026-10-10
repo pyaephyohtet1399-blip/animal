@@ -64,6 +64,18 @@ const archiveFile = async (contentHash, rawBody, compressed) => {
   return target;
 };
 
+// Envelope-level interviewer identity (မေးမြန်သူ) sent by the mobile app (D-64).
+const normalizeInterviewer = (value) => {
+  if (!value || typeof value !== 'object') return null;
+  const name = typeof value.name === 'string' ? value.name.trim() : '';
+  const phone = typeof value.phone === 'string' ? value.phone.trim() : '';
+  if (!name && !phone) return null;
+  const fields = {};
+  if (name) fields.interviewerName = name;
+  if (phone) fields.interviewerPhone = phone;
+  return fields;
+};
+
 const buildPlan = async (user, envelope) => {
   const details = [];
   const conflicts = [];
@@ -187,13 +199,24 @@ const applyPlan = async (user, envelope, plan, meta) => {
   const counters = { created: 0, updated: 0, deleted: 0 };
   const allocated = new Map();
   const rows = [];
+  const interviewer = normalizeInterviewer(envelope.interviewer);
+  const deltas = summaryService.createSummaryAccumulator();
+
+  const createRows = envelope.households.filter((row) => row.action === 'create');
+  if (createRows.length > 0) {
+    // Two INCRBY round trips allocate every id up-front (was 2 per row) (D-64).
+    const interviewIds = await idService.allocateInterviewIds(redis, createRows.length);
+    const surveyIds = await idService.allocateSurveyIds(redis, createRows.length);
+    createRows.forEach((row, index) => {
+      allocated.set(row.localRowId, {
+        interviewId: interviewIds[index],
+        surveyId: surveyIds[index]
+      });
+    });
+  }
 
   for (const row of envelope.households) {
     if (row.action === 'create') {
-      allocated.set(row.localRowId, {
-        interviewId: await idService.generateInterviewId(redis),
-        surveyId: await idService.generateSurveyId(redis)
-      });
       counters.created += 1;
       rows.push({
         localRowId: row.localRowId,
@@ -230,93 +253,129 @@ const applyPlan = async (user, envelope, plan, meta) => {
 
   try {
     await session.withTransaction(async () => {
-      for (const row of envelope.households) {
-        if (row.action === 'create') {
+      if (createRows.length > 0) {
+        const interviewDocs = createRows.map((row) => {
           const ids = allocated.get(row.localRowId);
-          const [interview] = await InterviewInfo.create(
-            [{ interviewId: ids.interviewId, ...interviewFields(row.interview), tspCode: user.tspCode, tvgCode: user.tvgCode, wvCode: user.wvCode }],
-            { session }
-          );
-          const surveyId = ids.surveyId;
-          const [survey] = await Survey.create(
-            [
-              {
-                surveyId,
-                interviewId: interview._id,
-                villageHeadmanId: user.userId,
-                status: 'submitted',
-                syncVersion: 1,
-                districtCode: user.districtCode,
-                tspCode: user.tspCode,
-                tvgCode: user.tvgCode,
-                wvCode: user.wvCode,
-                ...animalFields(row.survey),
-                hasBreeding: row.survey.breedingAnimals.length > 0
-              }
-            ],
-            { session }
-          );
-          await summaryService.updateSummary(survey.toObject(), 1, session);
-          continue;
-        }
+          return {
+            interviewId: ids.interviewId,
+            ...interviewFields(row.interview),
+            tspCode: user.tspCode,
+            tvgCode: user.tvgCode,
+            wvCode: user.wvCode
+          };
+        });
+        const insertedInterviews = await InterviewInfo.insertMany(interviewDocs, { session });
+        const surveyDocs = createRows.map((row, index) => {
+          const ids = allocated.get(row.localRowId);
+          return {
+            surveyId: ids.surveyId,
+            interviewId: insertedInterviews[index]._id,
+            villageHeadmanId: user.userId,
+            status: 'submitted',
+            syncVersion: 1,
+            districtCode: user.districtCode,
+            tspCode: user.tspCode,
+            tvgCode: user.tvgCode,
+            wvCode: user.wvCode,
+            ...animalFields(row.survey),
+            hasBreeding: row.survey.breedingAnimals.length > 0,
+            ...(interviewer || {})
+          };
+        });
+        await Survey.insertMany(surveyDocs, { session });
+        for (const doc of surveyDocs) deltas.add(doc, 1);
+      }
 
-        const target = plan.bySurveyId.get(row.surveyId);
-        if (row.action === 'delete') {
-          const previous = await Survey.findOneAndUpdate(
-            { _id: target._id, syncVersion: row.syncVersion, deletedAt: null },
-            { $set: { deletedAt: new Date() }, $inc: { syncVersion: 1 } },
-            { session, new: false }
-          );
-          if (!previous) {
-            throw new ApiError(
-              409,
-              'Survey changed during upload',
-              'version_conflict',
-              [{ localRowId: row.localRowId, surveyId: row.surveyId, serverVersion: target.syncVersion, message: 'Survey changed during upload' }]
-            );
-          }
-          if (isCounted(previous.status)) {
-            await summaryService.updateSummary(previous, -1, session);
-          }
-          continue;
-        }
+      // Update/delete rows: one in-transaction read re-verifies versions for
+      // conflict detection, then ONE bulkWrite applies every row - was 2
+      // round trips per row (~60ms each against Atlas) (D-64).
+      const pendingRows = envelope.households.filter((row) => row.action !== 'create');
+      if (pendingRows.length > 0) {
+        const targetIds = [...new Set(pendingRows.map((row) => row.surveyId))];
+        const freshTargets = await Survey.find({
+          surveyId: { $in: targetIds },
+          deletedAt: null,
+          ...buildSurveyScope(user)
+        })
+          .session(session)
+          .lean();
+        const freshById = new Map(freshTargets.map((doc) => [doc.surveyId, doc]));
 
-        const previous = await Survey.findOneAndUpdate(
-          { _id: target._id, syncVersion: row.syncVersion, deletedAt: null },
-          {
-            $set: { status: 'submitted', ...animalFields(row.survey), hasBreeding: row.survey.breedingAnimals.length > 0 },
-            $inc: { syncVersion: 1 }
-          },
-          { session, new: false }
-        );
-        if (!previous) {
+        const conflicts = [];
+        for (const row of pendingRows) {
+          const target = freshById.get(row.surveyId);
+          if (!target || target.syncVersion !== row.syncVersion) {
+            conflicts.push({
+              localRowId: row.localRowId,
+              surveyId: row.surveyId,
+              declaredVersion: row.syncVersion,
+              serverVersion: target ? target.syncVersion : null,
+              message: 'Server holds a newer version'
+            });
+          }
+        }
+        if (conflicts.length > 0) {
           throw new ApiError(
             409,
-            'Survey changed during upload',
+            'Server holds newer versions for some households - refresh and re-upload',
             'version_conflict',
-            [{ localRowId: row.localRowId, surveyId: row.surveyId, serverVersion: target.syncVersion, message: 'Survey changed during upload' }]
+            conflicts
           );
         }
-        const interviewUpdate = await InterviewInfo.updateOne(
-          { _id: previous.interviewId },
-          { $set: interviewFields(row.interview) },
-          { session }
-        );
-        if (interviewUpdate.matchedCount === 0) {
-          throw new ApiError(422, 'Interview record missing for this survey', 'validation_error', [
-            { localRowId: row.localRowId, field: 'surveyId', message: 'Interview record missing' }
-          ]);
+
+        const surveyOps = [];
+        const interviewOps = [];
+        for (const row of pendingRows) {
+          const target = freshById.get(row.surveyId);
+          if (row.action === 'delete') {
+            surveyOps.push({
+              updateOne: {
+                filter: { _id: target._id, syncVersion: row.syncVersion, deletedAt: null },
+                update: { $set: { deletedAt: new Date() }, $inc: { syncVersion: 1 } }
+              }
+            });
+            if (isCounted(target.status)) {
+              deltas.add(target, -1);
+            }
+            continue;
+          }
+          surveyOps.push({
+            updateOne: {
+              filter: { _id: target._id, syncVersion: row.syncVersion, deletedAt: null },
+              update: {
+                $set: {
+                  status: 'submitted',
+                  ...animalFields(row.survey),
+                  hasBreeding: row.survey.breedingAnimals.length > 0,
+                  ...(interviewer || {})
+                },
+                $inc: { syncVersion: 1 }
+              }
+            }
+          });
+          interviewOps.push({
+            updateOne: {
+              filter: { _id: target.interviewId },
+              update: { $set: interviewFields(row.interview) }
+            }
+          });
+          if (isCounted(target.status)) {
+            deltas.add(target, -1);
+          }
+          deltas.add(
+            { tspCode: target.tspCode, wvCode: target.wvCode, ...animalFields(row.survey) },
+            1
+          );
         }
-        const nextSummaryView = {
-          tspCode: previous.tspCode,
-          wvCode: previous.wvCode,
-          ...animalFields(row.survey)
-        };
-        if (isCounted(previous.status)) {
-          await summaryService.updateSummary(previous, -1, session);
+        if (surveyOps.length > 0) {
+          await Survey.bulkWrite(surveyOps, { session, ordered: false });
         }
-        await summaryService.updateSummary(nextSummaryView, 1, session);
+        if (interviewOps.length > 0) {
+          await InterviewInfo.bulkWrite(interviewOps, { session, ordered: false });
+        }
       }
+
+      await deltas.flush(session);
 
       await UploadReceipt.create(
         [

@@ -121,6 +121,8 @@ describe('POST /api/v1/upload/village', () => {
     expect(res.body.data.counts).toEqual({ households: 2, animals: 24 });
     expect(res.body.data.rows).toHaveLength(2);
     expect(res.body.data.rows[0]).toMatchObject({ localRowId: 'r-1', action: 'create', syncVersion: 1 });
+    // batched id allocation hands out contiguous ranges (D-64)
+    expect(res.body.data.rows[1].surveyId - res.body.data.rows[0].surveyId).toBe(1);
     expect(res.body.meta.replayed).toBe(false);
 
     expect(await Survey.countDocuments({})).toBe(2);
@@ -275,6 +277,63 @@ describe('POST /api/v1/upload/village', () => {
 
   test('duplicate localRowId in one payload is rejected', async () => {
     const res = await postUpload(envelope([createRow('dup'), createRow('dup')]));
+    expect(res.status).toBe(422);
+    expect(res.body.error.code).toBe('validation_error');
+    expect(await Survey.countDocuments({})).toBe(0);
+  });
+
+  test('stores the envelope interviewer name and phone on created surveys (D-64)', async () => {
+    const body = envelope([createRow('r-1')], {
+      interviewer: { name: '  ဦးမောင်မောင်  ', phone: '0912 345 678' }
+    });
+    const res = await postUpload(body);
+    expect(res.status).toBe(200);
+
+    const survey = await Survey.findOne({}).lean();
+    expect(survey.interviewerName).toBe('ဦးမောင်မောင်');
+    expect(survey.interviewerPhone).toBe('0912 345 678');
+  });
+
+  test('envelope without interviewer leaves interviewer fields unset', async () => {
+    const res = await postUpload(envelope([createRow('r-1')]));
+    expect(res.status).toBe(200);
+
+    const survey = await Survey.findOne({}).lean();
+    expect(survey.interviewerName).toBeUndefined();
+    expect(survey.interviewerPhone).toBeUndefined();
+  });
+
+  test('interviewer travels with update rows as well', async () => {
+    const first = await postUpload(envelope([createRow('r-1')]));
+    const [row] = first.body.data.rows;
+
+    const second = await postUpload(
+      envelope(
+        [
+          {
+            localRowId: 'r-1',
+            action: 'update',
+            surveyId: row.surveyId,
+            syncVersion: row.syncVersion,
+            interview: interview({ hName: 'ပြင်ဆင်း' }),
+            survey: ANIMALS
+          }
+        ],
+        { interviewer: { name: 'မမေ', phone: '0999999999' } }
+      )
+    );
+    expect(second.status).toBe(200);
+
+    const survey = await Survey.findOne({ surveyId: row.surveyId }).lean();
+    expect(survey.interviewerName).toBe('မမေ');
+    expect(survey.interviewerPhone).toBe('0999999999');
+  });
+
+  test('rejects an interviewer phone with invalid characters', async () => {
+    const body = envelope([createRow('r-1')], {
+      interviewer: { name: 'မမေ', phone: 'not-a-phone' }
+    });
+    const res = await postUpload(body);
     expect(res.status).toBe(422);
     expect(res.body.error.code).toBe('validation_error');
     expect(await Survey.countDocuments({})).toBe(0);

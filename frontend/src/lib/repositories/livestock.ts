@@ -24,6 +24,22 @@ export interface ApiSurveyDetail {
   breedingAnimals: ApiAnimal[];
 }
 
+/** One pre-grouped animal row from `GET /statistics/overview`. */
+export interface OverviewRow {
+  type: "big" | "small" | "poultry" | "breeding";
+  categoryId: number;
+  ageLimit: string | null;
+  sex: string;
+  count: number;
+}
+
+/** Dashboard overview payload: role-scoped totals plus grouped animal rows. */
+export interface CensusOverview {
+  interviewCount: number;
+  livestockCount: number;
+  rows: OverviewRow[];
+}
+
 /** Body of `PUT /surveys/:surveyId` — interview fields plus the four arrays. */
 export interface UpdateSurveyPayload {
   hName: string;
@@ -137,4 +153,44 @@ export function buildCensus(
   const groups = [...groupsById.values()].filter((g) => g.answers.length > 0);
 
   return { groups, totalCount, answerCount: allAnswers.length, unresolvedCount: 0 };
+}
+
+/**
+ * Resolve pre-grouped overview rows into the same `LivestockAnswer` shape
+ * `buildCensus` produces, so the dashboard shares one category/age/sex mapping.
+ */
+export function buildOverviewAnswers(
+  rows: OverviewRow[],
+  categories: Category[],
+  mainCategories: MainCategory[],
+): LivestockAnswer[] {
+  const categoryById = new Map(categories.map((c) => [c.cat_id, c]));
+  const mainCategoryById = new Map(mainCategories.map((m) => [m.mcat_id, m]));
+
+  const answers: LivestockAnswer[] = [];
+  let answerId = 1;
+
+  for (const row of rows) {
+    const cat_id = catIdFor(row.type, row.categoryId);
+    const category = categoryById.get(cat_id);
+    const mainCategory = mainCategoryById.get(TYPE_TO_MCAT[row.type]);
+    if (!category || !mainCategory) continue;
+    const age = row.ageLimit ? (AGE_LIMIT_CODE[row.ageLimit] ?? null) : null;
+    const sex = SEX_MAP[row.sex] ?? "M";
+
+    answers.push({
+      id: answerId++,
+      count: row.count,
+      categoryId: category.cat_id,
+      sourceCategoryId: row.categoryId,
+      categoryName: category.cat_name,
+      mainCategoryId: mainCategory.mcat_id,
+      mainCategoryName: mainCategory.name,
+      restrictionId: 0,
+      age: age as LivestockAnswer["age"],
+      sex,
+    });
+  }
+
+  return answers;
 }

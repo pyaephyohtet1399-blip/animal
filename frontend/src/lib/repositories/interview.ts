@@ -23,6 +23,8 @@ export interface ApiSurvey {
   tvgCode: string;
   wvCode: string;
   syncVersion: number;
+  interviewerName?: string;
+  interviewerPhone?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -47,12 +49,12 @@ export function surveyToInterview(survey: ApiSurvey): InterviewInfo {
     h_age: iv.hAge,
     ans_date: toDateOnly(iv.ansDate),
     wvCode: survey.wvCode,
+    interviewer_name: survey.interviewerName ?? "",
+    interviewer_phone: survey.interviewerPhone ?? "",
   };
 }
 
 export const PAGE_SIZE = 100;
-/** Safety valve: 50 pages × 100 rows = 5 000 interviews. */
-export const MAX_PAGES = 50;
 
 /**
  * Most recently answered first, ties broken by `p_Id`.

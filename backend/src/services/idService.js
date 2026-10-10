@@ -44,11 +44,27 @@ const generateSurveyId = async (redis) => Number(await redis.incr(SURVEY_KEY));
 
 const generateInterviewId = async (redis) => Number(await redis.incr(INTERVIEW_KEY));
 
+// Batch allocation: one INCRBY round trip returns a contiguous, non-overlapping
+// range even when several uploads allocate concurrently (D-64).
+const allocateIds = async (redis, key, count) => {
+  if (count <= 0) return [];
+  const end = Number(await redis.incrby(key, count));
+  const start = end - count + 1;
+  return Array.from({ length: count }, (_, index) => start + index);
+};
+
+const allocateSurveyIds = (redis, count) => allocateIds(redis, SURVEY_KEY, count);
+
+const allocateInterviewIds = (redis, count) => allocateIds(redis, INTERVIEW_KEY, count);
+
 module.exports = {
   initIdCounters,
   reconcileIdCounters,
   generateSurveyId,
   generateInterviewId,
+  allocateIds,
+  allocateSurveyIds,
+  allocateInterviewIds,
   SURVEY_KEY,
   INTERVIEW_KEY
 };

@@ -6,6 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
+# Local test data (generated xlsx files)
+excel/
+
 # Next.js
 .next/
 out/

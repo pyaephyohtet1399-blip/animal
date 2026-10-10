@@ -41,6 +41,10 @@ export interface InterviewInfo {
   /** ISO date string (YYYY-MM-DD). */
   ans_date: string;
   wvCode: string;
+  /** Interviewer uploaded from the mobile app (blank on older surveys). */
+  interviewer_name?: string;
+  /** Interviewer phone uploaded from the mobile app (blank on older surveys). */
+  interviewer_phone?: string;
 }
 
 /* -------------------------------------------------------------------------- */

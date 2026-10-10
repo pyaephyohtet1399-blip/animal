@@ -6,12 +6,14 @@ const {
   createSurveySchema,
   updateSurveySchema,
   surveyIdParamSchema,
-  listQuerySchema
+  listQuerySchema,
+  detailsQuerySchema
 } = require('../validators/survey.validator');
 
 const router = express.Router();
 
 router.get('/', validate(listQuerySchema), surveyController.list);
+router.get('/details', validate(detailsQuerySchema), surveyController.getDetails);
 router.get('/:surveyId', validate(surveyIdParamSchema), surveyController.getDetail);
 
 router.post('/', requireRole('survey:create'), validate(createSurveySchema), surveyController.create);

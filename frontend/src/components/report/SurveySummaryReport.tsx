@@ -23,7 +23,7 @@
  */
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { getAllColumnNames, SECTION_LABELS, HOUSEHOLD_COLUMNS } from "@/components/report/surveySummary.utils";
 import { DetailPanel } from "@/components/ui/detail-panel";
 import { Separator } from "@/components/ui/separator";
@@ -72,20 +72,14 @@ export function SurveySummaryReport({
   className?: string;
 }) {
   const [isExpanded, setIsExpanded] = useState(expanded);
-  const [stats, setStats] = useState<SurveySummaryStats | null>(null);
-
-  // Calculate statistics from the available data
-  useEffect(() => {
-    calculateStats(data);
-  }, [data]);
 
   /**
    * Calculate high-level summary statistics from the census data.
    * These are derived from the WDN columns available in the data.
    */
-  function calculateStats(data: ReportBundle | null | undefined) {
+  function calculateStats(data: ReportBundle | null | undefined): SurveySummaryStats {
     if (!data) {
-      setStats({
+      return {
         totalRecords: 0,
         totalHouseholds: 0,
         totalCattle: 0,
@@ -102,8 +96,7 @@ export function SurveySummaryReport({
         totalQuails: 0,
         totalOtherAnimals: 0,
         totalBreedingAnimals: 0,
-      });
-      return;
+      };
     }
 
 const totalRecords = data.totals.interviewCount;
@@ -120,7 +113,7 @@ const totalRecords = data.totals.interviewCount;
     let totalTurkeys = 0;
     let totalGeese = 0;
     let totalQuails = 0;
-    let totalOtherAnimals = 0;
+    const totalOtherAnimals = 0;
     let totalBreedingAnimals = 0;
 
     // Calculate totals from the report bundle's category data
@@ -158,7 +151,7 @@ const totalRecords = data.totals.interviewCount;
       }
     }
 
-    setStats({
+    return {
       totalRecords,
       totalHouseholds,
       totalCattle,
@@ -175,10 +168,12 @@ const totalRecords = data.totals.interviewCount;
       totalQuails,
       totalOtherAnimals,
       totalBreedingAnimals,
-    });
+    };
   }
 
-/**
+  const stats = useMemo(() => calculateStats(data), [data]);
+
+  /**
     * Get columns for a specific section.
     */
   function getSectionData(sectionIndex: number): string[] {

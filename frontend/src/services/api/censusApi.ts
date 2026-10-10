@@ -9,7 +9,6 @@ import {
   type ApiCategory,
 } from "@/lib/repositories/category";
 import {
-  MAX_PAGES,
   PAGE_SIZE,
   selectInterviewsByWardVillage,
   surveyToInterview,
@@ -18,6 +17,7 @@ import {
 import {
   buildCensus,
   type ApiSurveyDetail,
+  type CensusOverview,
   type UpdateSurveyPayload,
 } from "@/lib/repositories/livestock";
 import { parseTownship, type ApiTownship } from "@/lib/repositories/township";
@@ -55,6 +55,14 @@ function asQueryFnError(error: unknown): QueryFnError {
           : "Failed to load";
   return { status: "CUSTOM_ERROR", error: message };
 }
+
+/**
+ * Bulk detail fetches are chunked so one dataset load stays a handful of
+ * requests instead of one request per survey (keeps the API rate limiter happy).
+ */
+const DETAIL_CHUNK_SIZE = 200;
+
+type SurveyDetailsResponse = { data: ApiSurveyDetail[] };
 
 export const censusApi = createApi({
   reducerPath: "censusApi",
@@ -123,15 +131,20 @@ export const censusApi = createApi({
         }
         const firstPage = first.data as SurveyPage | undefined;
         const rows = [...(firstPage?.data ?? [])];
-        const totalPages = Math.min(firstPage?.meta?.total_pages ?? 1, MAX_PAGES);
-        for (let page = 2; page <= totalPages; page += 1) {
-          const next = await baseQuery({
-            url: `surveys?page=${page}&per_page=${PAGE_SIZE}`,
-          });
-          if (next.error) {
-            return { error: next.error };
-          }
-          rows.push(...((next.data as SurveyPage | undefined)?.data ?? []));
+        const totalPages = firstPage?.meta?.total_pages ?? 1;
+        // Remaining pages load together — sequential awaits made the first
+        // dashboard paint wait on dozens of back-to-back round trips.
+        const rest = await Promise.all(
+          Array.from({ length: totalPages - 1 }, (_, index) => index + 2).map((page) =>
+            baseQuery({ url: `surveys?page=${page}&per_page=${PAGE_SIZE}` }),
+          ),
+        );
+        const failed = rest.find((response) => response.error !== undefined);
+        if (failed?.error) {
+          return { error: failed.error };
+        }
+        for (const response of rest) {
+          rows.push(...((response.data as SurveyPage | undefined)?.data ?? []));
         }
         return { data: rows.map(surveyToInterview) };
       },
@@ -141,6 +154,33 @@ export const censusApi = createApi({
     getSurveyDetail: build.query<ApiSurveyDetail, number>({
       query: (surveyId) => `surveys/${surveyId}`,
       transformResponse: (response: { data: ApiSurveyDetail }) => response.data,
+      providesTags: ["Surveys"],
+    }),
+
+    getSurveyDetails: build.query<ApiSurveyDetail[], number[]>({
+      async queryFn(ids, _arg, _queryApi, baseQuery) {
+        if (ids.length === 0) return { data: [] };
+        const chunks: number[][] = [];
+        for (let index = 0; index < ids.length; index += DETAIL_CHUNK_SIZE) {
+          chunks.push(ids.slice(index, index + DETAIL_CHUNK_SIZE));
+        }
+        try {
+          const responses = await Promise.all(
+            chunks.map((chunk) => baseQuery({ url: `surveys/details?ids=${chunk.join(",")}` })),
+          );
+          const failed = responses.find((response) => response.error !== undefined);
+          if (failed?.error) {
+            return { error: failed.error };
+          }
+          return {
+            data: responses.flatMap(
+              (response) => (response.data as SurveyDetailsResponse | undefined)?.data ?? [],
+            ),
+          };
+        } catch (error) {
+          return { error: asQueryFnError(error) };
+        }
+      },
       providesTags: ["Surveys"],
     }),
 
@@ -169,16 +209,17 @@ export const censusApi = createApi({
             dispatch(censusApi.endpoints.getCategories.initiate()).unwrap(),
           ]);
           const villageInterviews = selectInterviewsByWardVillage(interviews, wvCode);
-          const details = await Promise.all(
-            villageInterviews.map((interview) =>
-              dispatch(censusApi.endpoints.getSurveyDetail.initiate(interview.p_Id)).unwrap(),
+          const details = await dispatch(
+            censusApi.endpoints.getSurveyDetails.initiate(
+              villageInterviews.map((interview) => interview.p_Id),
             ),
-          );
+          ).unwrap();
+          const detailById = new Map(details.map((detail) => [detail.surveyId, detail]));
           const mainCategories = getMainCategories();
           const censusById: Record<string, LivestockCensus> = {};
-          details.forEach((detail, index) => {
-            const interview = villageInterviews[index];
-            if (interview) {
+          villageInterviews.forEach((interview) => {
+            const detail = detailById.get(interview.p_Id);
+            if (detail) {
               censusById[String(interview.p_Id)] = buildCensus(detail, categories, mainCategories);
             }
           });
@@ -205,17 +246,18 @@ export const censusApi = createApi({
               dispatch(censusApi.endpoints.getCategories.initiate()).unwrap(),
             ]);
 
-          const details = await Promise.all(
-            interviews.map((interview) =>
-              dispatch(censusApi.endpoints.getSurveyDetail.initiate(interview.p_Id)).unwrap(),
+          const details = await dispatch(
+            censusApi.endpoints.getSurveyDetails.initiate(
+              interviews.map((interview) => interview.p_Id),
             ),
-          );
+          ).unwrap();
+          const detailById = new Map(details.map((detail) => [detail.surveyId, detail]));
 
           const mainCategories = getMainCategories();
           const censusById: Record<string, LivestockCensus> = {};
-          details.forEach((detail, index) => {
-            const interview = interviews[index];
-            if (interview) {
+          interviews.forEach((interview) => {
+            const detail = detailById.get(interview.p_Id);
+            if (detail) {
               censusById[String(interview.p_Id)] = buildCensus(detail, categories, mainCategories);
             }
           });
@@ -237,6 +279,12 @@ export const censusApi = createApi({
       },
       providesTags: ["Census"],
     }),
+
+    getOverview: build.query<CensusOverview, void>({
+      query: () => "statistics/overview",
+      transformResponse: (response: { data: CensusOverview }) => response.data,
+      providesTags: ["Census"],
+    }),
   }),
 });
 
@@ -250,6 +298,7 @@ const {
   useGetCategoriesQuery,
   useGetSurveyDetailQuery,
   useUpdateSurveyMutation,
+  useGetOverviewQuery,
 } = censusApi;
 
 export {
@@ -261,5 +310,6 @@ export {
   useGetCensusDatasetQuery,
   useGetCategoriesQuery,
   useGetSurveyDetailQuery,
+  useGetOverviewQuery,
   useUpdateSurveyMutation,
 };

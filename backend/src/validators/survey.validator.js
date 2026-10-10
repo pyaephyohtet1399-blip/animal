@@ -112,15 +112,38 @@ const listQuerySchema = z.object({
     .default({})
 });
 
+const MAX_DETAILS_IDS = 500;
+
+const detailsQuerySchema = z.object({
+  query: z.object({
+    ids: z
+      .string()
+      .trim()
+      .min(1)
+      .max(8000)
+      .transform((value) => value.split(',').map((part) => Number(part.trim())))
+      .refine(
+        (ids) =>
+          ids.length >= 1 &&
+          ids.length <= MAX_DETAILS_IDS &&
+          ids.every((id) => Number.isInteger(id) && id > 0),
+        'ids must be comma-separated positive integers (max 500 per request)'
+      )
+  })
+});
+
 module.exports = {
   createSurveySchema,
   updateSurveySchema,
   surveyIdParamSchema,
   listQuerySchema,
+  detailsQuerySchema,
+  MAX_DETAILS_IDS,
   surveyBodySchema,
   interviewShape,
   animalListsShape,
   bigAnimalSchema,
   smallAnimalSchema,
+  poultryAnimalSchema,
   breedingAnimalSchema
 };

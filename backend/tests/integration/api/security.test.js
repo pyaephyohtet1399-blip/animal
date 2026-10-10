@@ -74,20 +74,37 @@ describe('rate limiting (D-30)', () => {
     expect(last.headers['retry-after']).toBe('60');
   });
 
-  test('role headers follow the role table', async () => {
+  test('role headers follow the role table (GET = read limit, POST = write limit)', async () => {
     const v = await request(app).get('/api/v1/locations/townships').set(auth(villageToken));
     expect(v.status).toBe(200);
-    expect(v.headers['x-ratelimit-limit']).toBe('100');
+    expect(v.headers['x-ratelimit-limit']).toBe('1000');
     const t = await request(app).get('/api/v1/locations/townships').set(auth(townshipToken));
-    expect(t.headers['x-ratelimit-limit']).toBe('200');
+    expect(t.headers['x-ratelimit-limit']).toBe('2000');
     const d = await request(app).get('/api/v1/locations/townships').set(auth(districtToken));
-    expect(d.headers['x-ratelimit-limit']).toBe('500');
+    expect(d.headers['x-ratelimit-limit']).toBe('5000');
+
+    const vw = await request(app).post('/api/v1/reports/district').set(auth(villageToken));
+    expect(vw.headers['x-ratelimit-limit']).toBe('100');
+    const tw = await request(app).post('/api/v1/reports/district').set(auth(townshipToken));
+    expect(tw.headers['x-ratelimit-limit']).toBe('200');
+    const dw = await request(app).post('/api/v1/reports/district').set(auth(districtToken));
+    expect(dw.headers['x-ratelimit-limit']).toBe('500');
   });
 
-  test('village role -> 429 after exhausting 100 requests', async () => {
+  test('reads do not consume the write budget', async () => {
+    for (let i = 0; i < 50; i += 1) {
+      const read = await request(app).get('/api/v1/locations/townships').set(auth(villageToken));
+      expect(read.status).toBe(200);
+    }
+    const write = await request(app).post('/api/v1/reports/district').set(auth(villageToken));
+    expect(write.status).not.toBe(429);
+    expect(write.headers['x-ratelimit-remaining']).toBe('99');
+  });
+
+  test('village role -> 429 after exhausting 100 write requests', async () => {
     let last;
     for (let i = 0; i <= 100; i += 1) {
-      last = await request(app).get('/api/v1/locations/townships').set(auth(villageToken));
+      last = await request(app).post('/api/v1/reports/district').set(auth(villageToken));
     }
     expect(last.status).toBe(429);
     expect(last.body.error.code).toBe('rate_limit_exceeded');

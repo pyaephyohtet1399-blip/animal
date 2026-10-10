@@ -1048,15 +1048,18 @@ app.use(csrfProtection);
 const Redis = require('ioredis');
 const redis = new Redis(process.env.REDIS_URL);
 
-const rateLimiter = (windowMs, max) => {
+const rateLimiter = (windowMs, max, bucket = '') => {
   return async (req, res, next) => {
-    const key = `ratelimit:${req.user?.userId || req.ip}`;
+    // bucket: 'r:' (read) / 'w:' (write) — budget တွေ ခွဲထား (D-63)
+    const key = `rl:${bucket}${req.user?.userId || req.ip}`;
 
-    // Atomic increment + expire
+    // SET NX = window anchor (traffic ဆက်ရင် TTL refresh မဖြစ်), INCR = count
     const pipeline = redis.pipeline();
+    pipeline.set(key, '0', 'PX', windowMs, 'NX');
     pipeline.incr(key);
-    pipeline.pexpire(key, windowMs);
-    const [current] = await pipeline.exec();
+    pipeline.pttl(key);
+    const results = await pipeline.exec();
+    const current = Number(results[1][1]);
 
     const remaining = Math.max(0, max - current);
     res.set('X-RateLimit-Limit', max);
@@ -1075,20 +1078,19 @@ const rateLimiter = (windowMs, max) => {
   };
 };
 
-const rateLimiters = {
-  anonymous: rateLimiter(60 * 1000, 30),
-  village: rateLimiter(60 * 1000, 100),
-  township: rateLimiter(60 * 1000, 200),
-  district: rateLimiter(60 * 1000, 500),
-};
+// GET/HEAD = READ_LIMITS ('r:' bucket), ကျန် = ROLE_LIMITS ('w:' bucket) (D-63)
+const limitsFor = (req) =>
+  req.method === 'GET' || req.method === 'HEAD'
+    ? { table: READ_LIMITS, bucket: 'r:' }
+    : { table: ROLE_LIMITS, bucket: 'w:' };
 ```
 
-| Role | Limit |
-|------|-------|
-| Anonymous | 30/min |
-| Village | 100/min |
-| Township | 200/min |
-| District | 500/min |
+| Role | Write (POST/PUT/DELETE) | Read (GET/HEAD) |
+|------|-------------------------|-----------------|
+| Anonymous | 30/min | 30/min |
+| Village | 100/min | 1000/min |
+| Township | 200/min | 2000/min |
+| District | 500/min | 5000/min |
 
 **Why Redis:** In-memory rate limiter က multi-instance deployment မှာ မှားယွင်းနိုင်ပါတယ်။ Redis က shared store အဖြစ် အလုပ်လုပ်ပြီး အကောင်းဆုံး accuracy ပေးပါတယ်။
 

@@ -9,6 +9,7 @@ const { setupTestApp, teardownTestApp, clearDb, clearRedis } = require('../../he
 let app;
 let villageToken;
 let otherVillageToken;
+let otherTspVillageToken;
 let townshipToken;
 let otherTownshipToken;
 let districtToken;
@@ -23,6 +24,13 @@ const VILLAGE = {
   wvCode: '194657'
 };
 const OTHER_VILLAGE = { ...VILLAGE, _id: '64f1a2b3c4d5e6f7a8b9c0d9', wvCode: '194660' };
+const OTHER_TSP_VILLAGE = {
+  ...VILLAGE,
+  _id: '64f1a2b3c4d5e6f7a8b9c0e7',
+  tspCode: 'MMR010028',
+  tvgCode: 'MMR010028001',
+  wvCode: '194700'
+};
 const TOWNSHIP = {
   _id: '64f1a2b3c4d5e6f7a8b9c0d2',
   loginCode: 'MMR010031',
@@ -67,6 +75,7 @@ beforeAll(async () => {
   app = await setupTestApp();
   villageToken = signFor(VILLAGE);
   otherVillageToken = signFor(OTHER_VILLAGE);
+  otherTspVillageToken = signFor(OTHER_TSP_VILLAGE);
   townshipToken = signFor(TOWNSHIP);
   otherTownshipToken = signFor(OTHER_TOWNSHIP);
   districtToken = signFor(DISTRICT);
@@ -347,6 +356,96 @@ describe('GET /api/v1/surveys/:surveyId (§9.3 single-query scope)', () => {
       .get(`/api/v1/surveys/${created.body.data.surveyId}`)
       .set(auth(villageToken));
     expect(res.status).toBe(404);
+  });
+});
+
+describe('GET /api/v1/surveys/details (bulk, D-63)', () => {
+  test('returns multiple details in one request sorted by surveyId', async () => {
+    const first = await createSurvey();
+    const second = await createSurvey();
+    expect(first.status).toBe(201);
+    expect(second.status).toBe(201);
+    const res = await request(app)
+      .get(`/api/v1/surveys/details?ids=${second.body.data.surveyId},${first.body.data.surveyId}`)
+      .set(auth(villageToken));
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((survey) => survey.surveyId)).toEqual([1, 2]);
+    expect(res.body.data[0].interviewId.hName).toBe(VALID_BODY.hName);
+  });
+
+  test('duplicate ids are deduped', async () => {
+    const created = await createSurvey();
+    const res = await request(app)
+      .get(`/api/v1/surveys/details?ids=${created.body.data.surveyId},${created.body.data.surveyId}`)
+      .set(auth(villageToken));
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  test('scope miss -> 404 with missing ids (no existence leak)', async () => {
+    const created = await createSurvey();
+    const res = await request(app)
+      .get(`/api/v1/surveys/details?ids=${created.body.data.surveyId}`)
+      .set(auth(otherVillageToken));
+    expect(res.status).toBe(404);
+    expect(res.body.error.code).toBe('not_found');
+    expect(res.body.error.details.missing).toEqual([1]);
+  });
+
+  test('township scope covers own tsp only', async () => {
+    const own = await createSurvey();
+    expect(own.status).toBe(201);
+    const otherTsp = await createSurvey(otherTspVillageToken);
+    expect(otherTsp.status).toBe(201);
+    const res = await request(app)
+      .get(`/api/v1/surveys/details?ids=${own.body.data.surveyId},${otherTsp.body.data.surveyId}`)
+      .set(auth(townshipToken));
+    expect(res.status).toBe(404);
+    expect(res.body.error.details.missing).toEqual([2]);
+    const onlyOwn = await request(app)
+      .get(`/api/v1/surveys/details?ids=${own.body.data.surveyId}`)
+      .set(auth(townshipToken));
+    expect(onlyOwn.status).toBe(200);
+    expect(onlyOwn.body.data).toHaveLength(1);
+  });
+
+  test('district fetches across villages', async () => {
+    const first = await createSurvey();
+    const second = await createSurvey(otherVillageToken);
+    const res = await request(app)
+      .get(`/api/v1/surveys/details?ids=${first.body.data.surveyId},${second.body.data.surveyId}`)
+      .set(auth(districtToken));
+    expect(res.status).toBe(200);
+    expect(res.body.data.map((survey) => survey.surveyId)).toEqual([1, 2]);
+  });
+
+  test('deleted survey in ids -> 404', async () => {
+    const created = await createSurvey();
+    await request(app)
+      .delete(`/api/v1/surveys/${created.body.data.surveyId}`)
+      .set(auth(villageToken));
+    const res = await request(app)
+      .get(`/api/v1/surveys/details?ids=${created.body.data.surveyId}`)
+      .set(auth(villageToken));
+    expect(res.status).toBe(404);
+  });
+
+  test('invalid ids -> 422', async () => {
+    const nonNumeric = await request(app).get('/api/v1/surveys/details?ids=abc').set(auth(villageToken));
+    expect(nonNumeric.status).toBe(422);
+    const empty = await request(app).get('/api/v1/surveys/details?ids=').set(auth(villageToken));
+    expect(empty.status).toBe(422);
+    const tooMany = await request(app)
+      .get(`/api/v1/surveys/details?ids=${Array.from({ length: 501 }, (_, i) => i + 1).join(',')}`)
+      .set(auth(villageToken));
+    expect(tooMany.status).toBe(422);
+    const mixed = await request(app).get('/api/v1/surveys/details?ids=1,abc').set(auth(villageToken));
+    expect(mixed.status).toBe(422);
+  });
+
+  test('requires authentication', async () => {
+    const res = await request(app).get('/api/v1/surveys/details?ids=1');
+    expect(res.status).toBe(401);
   });
 });
 

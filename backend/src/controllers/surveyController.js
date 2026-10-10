@@ -18,6 +18,15 @@ const getDetail = async (req, res, next) => {
   }
 };
 
+const getDetails = async (req, res, next) => {
+  try {
+    const surveys = await surveyService.getDetailsBySurveyIds(req.user, req.query.ids);
+    return res.json({ data: surveys });
+  } catch (error) {
+    return next(error);
+  }
+};
+
 const create = async (req, res, next) => {
   try {
     const data = await surveyService.create(req.user, req.body, req.app.locals.redis);
@@ -66,4 +75,4 @@ const submit = action(
   'submit'
 );
 
-module.exports = { list, getDetail, create, update, remove, submit };
+module.exports = { list, getDetail, getDetails, create, update, remove, submit };

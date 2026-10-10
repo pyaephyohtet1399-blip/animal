@@ -12,7 +12,7 @@ const { TRANSITIONS, COUNTED_STATUSES } = require('../constants/surveyStatus');
 const COUNT_TTL_SECONDS = 300;
 const SORT_WHITELIST = ['createdAt', '-createdAt', 'updatedAt', '-updatedAt', 'surveyId', '-surveyId'];
 const LIST_PROJECTION =
-  'surveyId status interviewId villageHeadmanId districtCode tspCode tvgCode wvCode syncVersion createdAt updatedAt';
+  'surveyId status interviewId villageHeadmanId districtCode tspCode tvgCode wvCode syncVersion interviewerName interviewerPhone createdAt updatedAt';
 const POPULATE_FIELDS = {
   village: 'hNo hName hPhone hEdu hGender hAge ansDate',
   township: 'hNo hName hPhone hEdu hGender hAge ansDate wvCode',
@@ -102,6 +102,21 @@ const getBySurveyId = async (user, surveyId) => {
     .lean();
   if (!survey) throw new ApiError(404, 'Survey not found', 'not_found');
   return survey;
+};
+
+const getDetailsBySurveyIds = async (user, surveyIds) => {
+  const uniqueIds = [...new Set(surveyIds)];
+  const filter = { surveyId: { $in: uniqueIds }, deletedAt: null, ...buildSurveyScope(user) };
+  const surveys = await Survey.find(filter)
+    .populate('interviewId', POPULATE_FIELDS[user.role] || POPULATE_FIELDS.village)
+    .sort({ surveyId: 1 })
+    .lean();
+  const found = new Set(surveys.map((survey) => survey.surveyId));
+  const missing = uniqueIds.filter((id) => !found.has(id));
+  if (missing.length > 0) {
+    throw new ApiError(404, 'Survey not found', 'not_found', { missing });
+  }
+  return surveys;
 };
 
 const create = async (user, payload, redis, options = {}) => {
@@ -237,6 +252,7 @@ module.exports = {
   canEdit,
   list,
   getBySurveyId,
+  getDetailsBySurveyIds,
   create,
   update,
   remove,

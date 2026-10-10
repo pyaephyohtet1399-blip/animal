@@ -3,7 +3,6 @@ const { interviewShape, animalListsShape } = require('./survey.validator');
 
 const UPLOAD_FORMAT = 'animal-census/village-upload';
 const UPLOAD_VERSION = 1;
-const MAX_HOUSEHOLDS = 1000;
 
 const localRowIdSchema = z.union([
   z.number().int().min(1),
@@ -62,11 +61,22 @@ const uploadEnvelopeSchema = z.object({
       platform: z.string().trim().max(32).optional()
     })
     .optional(),
+  interviewer: z
+    .object({
+      name: z.string().trim().max(70).optional(),
+      phone: z
+        .string()
+        .trim()
+        .max(20)
+        .regex(/^[0-9+\-() ]*$/, 'Invalid phone format')
+        .optional()
+    })
+    .optional(),
   counts: z.object({
-    households: z.number().int().min(0).max(MAX_HOUSEHOLDS),
+    households: z.number().int().min(0),
     animals: z.number().int().min(0).max(9999999)
   }),
-  households: z.array(householdSchema).min(1).max(MAX_HOUSEHOLDS)
+  households: z.array(householdSchema).min(1)
 });
 
 const uploadSchema = z.object({
@@ -87,7 +97,6 @@ const uploadStatusParamsSchema = z.object({
 module.exports = {
   UPLOAD_FORMAT,
   UPLOAD_VERSION,
-  MAX_HOUSEHOLDS,
   uploadEnvelopeSchema,
   uploadSchema,
   uploadStatusParamsSchema

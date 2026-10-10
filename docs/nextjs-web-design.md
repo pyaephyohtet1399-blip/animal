@@ -129,6 +129,7 @@ export const api = {
 | Method | Endpoint | Role | Description |
 |--------|----------|------|-------------|
 | GET | `/api/v1/surveys` | township, district | List surveys (scoped) |
+| GET | `/api/v1/surveys/details?ids=` | township, district | Bulk survey details (≤500 ids, chunked 200 — dataset load; D-63) |
 | GET | `/api/v1/surveys/:surveyId` | township, district | Survey detail |
 | PUT | `/api/v1/surveys/:surveyId` | township (own tsp), district | Edit survey |
 | DELETE | `/api/v1/surveys/:surveyId` | district | Delete any survey |

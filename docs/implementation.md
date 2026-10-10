@@ -357,18 +357,21 @@ requestId → helmet → cors (D-31) → compression → express.json({limit}) (
 → notFound → errorHandler
 ```
 
-- Rate limit: custom Redis (D-30), key `rl:<userId|ip>` — **role limits (architecture line 1034)**: anonymous 30/min, village 100/min, township 200/min, district 500/min; reports 500/min (route table)
+- Rate limit: custom Redis (D-30, D-63), key `rl:r:<userId|ip>` (read) / `rl:w:<userId|ip>` (write) — **role limits (architecture §4)**: anonymous 30/min; write = village 100/min, township 200/min, district 500/min; read (GET/HEAD) = village 1000/min, township 2000/min, district 5000/min; reports 500/min (route table)
 
   ```javascript
-  // middleware/rateLimit.js — INCR + PEXPIRE pipeline (architecture line 1004, atomic)
-  const rateLimiter = (windowMs, max) => async (req, res, next) => {
-    const key = `rl:${req.user?.userId || req.ip}`;
+  // middleware/rateLimit.js — SET NX (window anchor) + INCR + PTTL pipeline (D-63)
+  const rateLimit = (windowMs, max, bucket = '') => async (req, res, next) => {
+    const key = `rl:${bucket}${req.user?.userId || req.ip}`;
     const pipeline = redis.pipeline();
-    pipeline.incr(key); pipeline.pexpire(key, windowMs);
-    const [current] = await pipeline.exec();
+    pipeline.set(key, '0', 'PX', windowMs, 'NX'); // anchor — TTL per-request refresh မလုပ်
+    pipeline.incr(key);
+    pipeline.pttl(key);
+    const results = await pipeline.exec();
+    const current = Number(results[1][1]);
     res.set('X-RateLimit-Limit', max);
-    res.set('X-RateLimit-Remaining', Math.max(0, max - current[1]));
-    if (current[1] > max) return res.status(429).json({ error: { code: 'rate_limit_exceeded', message: 'Too many requests, please try again later.' } });
+    res.set('X-RateLimit-Remaining', Math.max(0, max - current));
+    if (current > max) return res.status(429).json({ error: { code: 'rate_limit_exceeded', message: 'Too many requests, please try again later.' } });
     next();
   };
   ```
@@ -396,7 +399,7 @@ requestId → helmet → cors (D-31) → compression → express.json({limit}) (
   // resource-level: scope.js — single-query check (§9.3) — ownership ပိုင်ရှင် မမှန်ရင် 404 (existence leak မလုပ်)
   ```
 
-- **Cache-Control**: locations/categories (cache 1h) = `public, max-age=3600`; surveys/sync/reports/auth = `no-store` (architecture line 2178)
+- **Cache-Control**: **all endpoints = `no-store`** — locations/categories အဖြေများ role-scoped ဖြစ်၍ browser/proxy cache လုပ်၍မရ (URL တူပြီး body ကွဲတာမို့ `public, max-age` က တစ်ယောက်အဖြေ တစ်ယောက်ပြန်ပေး; caching က server-side Redis မှာ scope key ဖြင့်သာ — 2026-10-07 fix)
 - **Compression**: `compression({ threshold: 1024, level: 6 })` (architecture line 2151)
 - `app.set('trust proxy', 1)` — Nginx နောက်တွင် IP မှန်စေ (D-30)
 - CORS: `methods: [GET,POST,PUT,PATCH,DELETE]`, `allowedHeaders: [Content-Type, Authorization, Idempotency-Key, X-Request-Id]` (D-31)
@@ -417,6 +420,7 @@ requestId → helmet → cors (D-31) → compression → express.json({limit}) (
 | GET | `/categories/:type` | auth | role | type ∈ `big\|small\|poultry\|breeding` (D-54), cache 1h |
 | GET | `/categories/:type/:categoryId` | auth | role | single category; 404 `not_found` မရှိရင်, 422 type/categoryId မမှန်; list cache share |
 | GET | `/surveys` | auth | role | scope filter + `page,per_page,status,search,sort,hasBreeding` (D-17/D-54) |
+| GET | `/surveys/details?ids=` | auth | role | bulk detail, ≤500 ids/request, scope miss → 404 + `details.missing` (D-63) |
 | GET | `/surveys/:surveyId` | auth | role | scope check (business ID) |
 | POST | `/surveys` | village | 100/min | create (draft) |
 | PUT | `/surveys/:surveyId` | auth | role | village = own draft; township = own tsp (any status); district = any (D-58) |

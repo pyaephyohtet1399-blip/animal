@@ -43,6 +43,38 @@ const updateSummary = async (survey, sign = 1, session = null) => {
   );
 };
 
+// Collects many ±1 summary deltas in memory and flushes them as ONE bulkWrite
+// per village - a 500-row upload becomes 1 summary op instead of ~1500 (D-64).
+const createSummaryAccumulator = () => {
+  const groups = new Map();
+  return {
+    add(survey, sign) {
+      const key = `${survey.tspCode}|${survey.wvCode}`;
+      let group = groups.get(key);
+      if (!group) {
+        group = { tspCode: survey.tspCode, wvCode: survey.wvCode, inc: {} };
+        groups.set(key, group);
+      }
+      for (const [field, value] of Object.entries(buildSummaryInc(survey, sign))) {
+        group.inc[field] = (group.inc[field] || 0) + value;
+      }
+    },
+    async flush(session = null) {
+      const ops = [...groups.values()].map(({ tspCode, wvCode, inc }) => ({
+        updateOne: {
+          filter: { tspCode, wvCode },
+          update: { $inc: inc, $set: { lastUpdated: new Date() } },
+          upsert: true
+        }
+      }));
+      if (ops.length > 0) {
+        await SurveySummary.bulkWrite(ops, { ordered: false, ...(session ? { session } : {}) });
+      }
+      return ops.length;
+    }
+  };
+};
+
 const recomputeAll = async () => {
   await SurveySummary.deleteMany({});
   const cursor = Survey.find({ status: { $in: COUNTED_STATUSES }, deletedAt: null })
@@ -70,4 +102,4 @@ const recomputeAll = async () => {
   return ops.length;
 };
 
-module.exports = { sumArray, buildSummaryInc, updateSummary, recomputeAll };
+module.exports = { sumArray, buildSummaryInc, updateSummary, createSummaryAccumulator, recomputeAll };
