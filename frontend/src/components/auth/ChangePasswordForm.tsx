@@ -18,7 +18,10 @@ export function ChangePasswordForm() {
     const newErrors: { currentPassword?: string; newPassword?: string; confirmPassword?: string } = {};
     if (!currentPassword.trim()) newErrors.currentPassword = "Current password is required.";
     if (!newPassword.trim()) newErrors.newPassword = "New password is required.";
-    if (newPassword.length < 6) newErrors.newPassword = "Password must be at least 6 characters.";
+    if (newPassword.length < 8) newErrors.newPassword = "Password must be at least 8 characters.";
+    if (!/[a-zA-Z]/.test(newPassword)) newErrors.newPassword = "Password must contain at least one letter.";
+    if (!/\d/.test(newPassword)) newErrors.newPassword = "Password must contain at least one digit.";
+    if (newPassword === currentPassword) newErrors.newPassword = "New password must differ from the old password.";
     if (newPassword !== confirmPassword) newErrors.confirmPassword = "Passwords do not match.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -32,11 +35,31 @@ export function ChangePasswordForm() {
     if (!validate()) return;
 
     try {
-      await changePassword({ currentPassword, newPassword }).unwrap();
+      await changePassword({ oldPassword: currentPassword, newPassword }).unwrap();
       setSuccess(true);
       setTimeout(() => router.push("/dashboard"), 1500);
-    } catch {
-      setServerError("Failed to change password. Please check your current password and try again.");
+    } catch (err: unknown) {
+      const error = err as { data?: { error?: { details?: Array<{ field: string; message: string }> } }; status?: number; message?: string; error?: { details?: Array<{ field: string; message: string }> } };
+      // Handle RTK Query error format (error.data.error.details) or direct response (error.error.details)
+      const details = error.data?.error?.details ?? error.error?.details;
+      const status = error.status ?? (error.data?.error ? 422 : undefined);
+      
+      if (status === 422 && details) {
+        const newErrors: { currentPassword?: string; newPassword?: string; confirmPassword?: string } = {};
+        details.forEach((detail) => {
+          if (detail.field === 'newPassword') {
+            newErrors.newPassword = detail.message;
+          } else if (detail.field === 'oldPassword') {
+            newErrors.currentPassword = detail.message;
+          }
+        });
+        if (Object.keys(newErrors).length > 0) {
+          setErrors(newErrors);
+          return;
+        }
+      }
+      const errorMessage = details?.[0]?.message ?? error.message ?? "Failed to change password. Please check your current password and try again.";
+      setServerError(errorMessage);
     }
   };
 
@@ -80,7 +103,7 @@ export function ChangePasswordForm() {
             className={`mt-1 h-10 w-full rounded-md border bg-background px-3 py-2 text-sm ${
               errors.newPassword ? "border-destructive" : "border-input"
             }`}
-            placeholder="Enter new password"
+            placeholder="Min. 8 chars, letter + digit"
             autoComplete="new-password"
             disabled={isLoading}
           />

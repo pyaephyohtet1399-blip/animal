@@ -100,5 +100,11 @@ export const baseQueryWithReauth: BaseQueryFn<string | FetchArgs, unknown, Fetch
     }
   }
 
+  if (result.error?.status === 403) {
+    clearApiTokens();
+    api.dispatch(logout());
+    return result;
+  }
+
   return result;
 };

@@ -29,14 +29,15 @@ import { StatCard } from "@/components/shared/stat-card";
 import { REPORT_COPY } from "@/config/reports";
 import { buildReportBundle, parseReportScope } from "@/lib/reports";
 import type { ReportBundle } from "@/lib/reports";
+import { apiErrorMessage } from "@/services/api/api-error";
 
 import { SurveySummaryReport } from "@/components/report/SurveySummaryReport";
 import { ExcelExportButton } from "@/components/report/ExcelExportButton";
 
 export function ReportsContent() {
   const searchParams = useSearchParams();
-  const { data: dataset, isError } = useGetCensusDatasetQuery();
-  const errorMessage = isError ? null : null;
+  const { data: dataset, error, isError } = useGetCensusDatasetQuery();
+  const errorMessage = isError ? apiErrorMessage(error) : null;
 
   const [showSurveySummary, setShowSurveySummary] = useState(false);
 

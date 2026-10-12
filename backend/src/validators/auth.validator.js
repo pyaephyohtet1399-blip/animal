@@ -22,7 +22,11 @@ const refreshSchema = z.object({
 const changePasswordSchema = z.object({
   body: z.object({
     oldPassword: z.string().min(1, 'Old password is required'),
-    newPassword: z.string().min(1, 'New password is required').max(64)
+    newPassword: z.string()
+      .min(8, 'Password must be at least 8 characters')
+      .max(64)
+      .regex(/[a-zA-Z]/, 'Password must contain at least one letter')
+      .regex(/\d/, 'Password must contain at least one digit')
   })
 });
 

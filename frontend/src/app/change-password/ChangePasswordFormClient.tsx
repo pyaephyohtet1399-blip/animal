@@ -13,10 +13,8 @@ export function ChangePasswordFormClient() {
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login");
-    } else if (isAuthenticated && !mustChangePassword) {
-      router.push("/dashboard");
     }
-  }, [isAuthenticated, mustChangePassword, router]);
+  }, [isAuthenticated, router]);
 
   if (!isAuthenticated) {
     return null;
