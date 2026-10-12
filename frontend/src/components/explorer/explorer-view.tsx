@@ -11,7 +11,7 @@ import { LocationDetails } from "@/components/explorer/location-details";
 import { LocationList } from "@/components/explorer/location-list";
 import { StatePanel } from "@/components/shared/state-panel";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { EXPLORER_COPY, EXPLORER_LEVEL_COPY } from "@/config ori/explorer";
+import { EXPLORER_COPY, EXPLORER_LEVEL_COPY } from "@/config-ori/explorer";
 import {
   buildExplorerHref,
   buildVillageHref,

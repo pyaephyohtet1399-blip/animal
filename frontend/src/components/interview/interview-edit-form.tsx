@@ -6,12 +6,12 @@ import { useMemo, useState, type FormEvent, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { INTERVIEW_COLUMNS, INTERVIEW_COPY } from "@/config ori/interview";
-import { LIVESTOCK_COPY } from "@/config ori/livestock";
+import { INTERVIEW_COLUMNS, INTERVIEW_COPY } from "@/config-ori/interview";
+import { LIVESTOCK_COPY } from "@/config-ori/livestock";
 import {
   AGE_CLASS_LABELS,
   SIZE_CLASS_LABELS,
-} from "@/config ori/restriction";
+} from "@/config-ori/restriction";
 import { cn } from "@/lib/cn";
 import { getMainCategories } from "@/lib/repositories/category";
 import {

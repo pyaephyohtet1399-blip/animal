@@ -9,7 +9,7 @@ import { NavList } from "@/components/layout/nav-list";
 import { useOfficerInfo } from "@/components/layout/officer-info";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { COUNTRY_NAME, DISTRICT_NAME } from "@/config ori/app";
+import { COUNTRY_NAME, DISTRICT_NAME } from "@/config-ori/app";
 
 export function Topbar() {
   const router = useRouter();

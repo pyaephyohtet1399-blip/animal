@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { APP_SHORT_NAME, DISTRICT_NAME_MM } from "@/config ori/app";
+import { APP_SHORT_NAME, DISTRICT_NAME_MM } from "@/config-ori/app";
 import { cn } from "@/lib/cn";
 
 export interface BrandProps {

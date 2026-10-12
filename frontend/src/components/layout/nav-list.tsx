@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
-import { navigationSections } from "@/config ori/navigation";
+import { navigationSections } from "@/config-ori/navigation";
 import { cn } from "@/lib/cn";
 import { isActiveRoute } from "@/lib/routes";
 
@@ -36,8 +36,8 @@ export function NavList({ variant }: NavListProps) {
       aria-label="Main"
       className={cn(isSidebar ? "flex flex-col gap-6" : "flex w-max items-center gap-1")}
     >
-      {navigationSections.map((section) => (
-        <div key={section.title} className={cn(isSidebar && "flex flex-col gap-1")}>
+      {navigationSections.map((section, index) => (
+        <div key={`${section.title}-${index}`} className={cn(isSidebar && "flex flex-col gap-1")}>
           
 
           <ul className={cn(isSidebar ? "flex flex-col gap-0.5" : "flex items-center gap-1")}>

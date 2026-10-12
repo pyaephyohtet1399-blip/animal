@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { DetailPanel } from "@/components/ui/detail-panel";
-import { INTERVIEW_COPY } from "@/config ori/interview";
+import { INTERVIEW_COPY } from "@/config-ori/interview";
 import { sortCensusRecords } from "@/lib/census";
 import type { InterviewInfo } from "@/types/census";
 import type { PlaceRef } from "@/types/explorer";

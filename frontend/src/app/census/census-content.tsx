@@ -4,7 +4,7 @@ import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { CensusRecordsView } from "@/components/census/census-records-view";
 import { PageHeader } from "@/components/shared/page-header";
-import { CENSUS_COPY } from "@/config ori/census";
+import { CENSUS_COPY } from "@/config-ori/census";
 import {
   normalizeCensusState,
   parseCensusState,

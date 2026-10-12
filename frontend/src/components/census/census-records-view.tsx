@@ -12,7 +12,7 @@ import { Pagination } from "@/components/table/pagination";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { DetailPanel } from "@/components/ui/detail-panel";
-import { CENSUS_COPY } from "@/config ori/census";
+import { CENSUS_COPY } from "@/config-ori/census";
 import { buildCensusHref, hasActiveFilters, CENSUS_PAGE_SIZE } from "@/lib/census";
 import type {
   CensusDataset,

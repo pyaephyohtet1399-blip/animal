@@ -9,7 +9,7 @@ import {
 import { InterviewDetails } from "@/components/interview/interview-details";
 import { StatePanel } from "@/components/shared/state-panel";
 import { Button } from "@/components/ui/button";
-import { INTERVIEW_COPY } from "@/config ori/interview";
+import { INTERVIEW_COPY } from "@/config-ori/interview";
 import type { ApiSurveyDetail, UpdateSurveyPayload } from "@/lib/repositories/livestock";
 import { apiErrorMessage } from "@/services/api/api-error";
 import {

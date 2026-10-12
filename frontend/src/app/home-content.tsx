@@ -30,7 +30,7 @@ import {
   DISTRICT_NAME,
   DISTRICT_NAME_MM,
   GEOGRAPHY_CHAIN,
-} from "@/config ori/app";
+} from "@/config-ori/app";
 import { apiErrorMessage } from "@/services/api/api-error";
 import {
   useGetInterviewsQuery,
