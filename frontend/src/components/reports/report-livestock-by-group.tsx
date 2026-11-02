@@ -57,8 +57,8 @@ function sexColumn<TRow extends LivestockGridRow>(
   return {
     group,
     header,
-    align: "right",
-    className: SEX_COLUMN,
+    //align: "right",
+    className: `${SEX_COLUMN} text-center`,
     render: (row) => figure(read(row)),
   };
 }

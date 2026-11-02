@@ -3,15 +3,6 @@ import type { PlaceRef } from "@/types/explorer";
 import type { LivestockCensus } from "@/types/livestock";
 import type { Option, SortState } from "@/types/ui";
 
-/**
- * A row of the census records table: one household interview with its place
- * resolved and its livestock census attached.
- *
- * The relationship is already walked by the data layer, so no component has to
- * join `interview_info` to `answer` to `category` to `restriction`. A place is
- * `null` only when a parent row is missing, which is a data problem the tables
- * below render honestly rather than hide.
- */
 export interface CensusRecord {
   /** `interview_info` exactly as stored. */
   interview: InterviewInfo;

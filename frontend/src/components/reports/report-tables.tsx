@@ -34,13 +34,13 @@ export function TownshipReport({ rows }: { rows: TractReportRow[] }) {
     {
       key: "interviews",
       header: REPORT_COPY.columns.interviews,
-      align: "right",
+      className: "text-center", // ညာဘက်ကပ်နေတာကို အလယ်ရောက်စေရန်
       render: (row) => <CountDisplay count={row.interviewCount} />,
     },
     {
       key: "livestock",
       header: REPORT_COPY.columns.livestock,
-      align: "right",
+      className: "text-center", // ညာဘက်ကပ်နေတာကို အလယ်ရောက်စေရန်
       render: (row) => <CountDisplay count={row.livestockCount} />,
     },
   ];
@@ -87,19 +87,19 @@ export function TractReport({ rows }: { rows: TractReportRow[] }) {
     {
       key: "villages",
       header: REPORT_COPY.columns.villages,
-      align: "right",
+      className: "text-center",
       render: (row) => <CountDisplay count={row.villageCount} />,
     },
     {
       key: "interviews",
       header: REPORT_COPY.columns.interviews,
-      align: "right",
+      className: "text-center",
       render: (row) => <CountDisplay count={row.interviewCount} />,
     },
     {
       key: "livestock",
       header: REPORT_COPY.columns.livestock,
-      align: "right",
+      className: "text-center",
       render: (row) => <CountDisplay count={row.livestockCount} />,
     },
   ];
@@ -112,7 +112,6 @@ export function TractReport({ rows }: { rows: TractReportRow[] }) {
       meta={`${rows.length} tracts`}
       breaksBefore
     >
-      {/* Screen: paginated rows + controls. */}
       <div className="print-none">
         <DataTable
           caption={`${REPORT_COPY.reports.tract.title} — ${rows.length} tracts`}
@@ -136,7 +135,6 @@ export function TractReport({ rows }: { rows: TractReportRow[] }) {
         )}
       </div>
 
-      {/* Print: the full filtered set, not just the current screen page. */}
       {pageResult.pageCount > 1 ? (
         <div className="print-only">
           <DataTable
@@ -183,13 +181,13 @@ export function VillageReport({ rows }: { rows: VillageReportRow[] }) {
     {
       key: "interviews",
       header: REPORT_COPY.columns.interviews,
-      align: "right",
+      className: "text-center",
       render: (row) => <CountDisplay count={row.interviewCount} />,
     },
     {
       key: "livestock",
       header: REPORT_COPY.columns.livestock,
-      align: "right",
+      className: "text-center",
       render: (row) => <CountDisplay count={row.livestockCount} />,
     },
     {
