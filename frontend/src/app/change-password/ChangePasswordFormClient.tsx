@@ -8,7 +8,7 @@ import { useAppSelector } from "@/store/hooks";
 export function ChangePasswordFormClient() {
   const router = useRouter();
   const isAuthenticated = useAppSelector((state) => state.auth.isAuthenticated);
-  const mustChangePassword = useAppSelector((state) => state.auth.mustChangePassword);
+  // const _mustChangePassword = useAppSelector((state) => state.auth.mustChangePassword);
 
   useEffect(() => {
     if (!isAuthenticated) {

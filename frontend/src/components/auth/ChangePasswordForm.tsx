@@ -35,7 +35,7 @@ export function ChangePasswordForm() {
     if (!validate()) return;
 
     try {
-      await changePassword({ oldPassword: currentPassword, newPassword }).unwrap();
+      await changePassword({ currentPassword, newPassword }).unwrap();
       setSuccess(true);
       setTimeout(() => router.push("/dashboard"), 1500);
     } catch (err: unknown) {
